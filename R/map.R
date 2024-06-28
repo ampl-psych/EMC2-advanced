@@ -5,15 +5,15 @@ get_pars <- function(p_vector,dadm) {
 
   if (!is.null(attr(dadm,"ordinal")))
     if (is.matrix(p_vector))
-       p_vector[,attr(dadm,"ordinal")] <- exp(p_vector[,attr(dadm,"ordinal")]) else
-       p_vector[attr(dadm,"ordinal")] <- exp(p_vector[attr(dadm,"ordinal")])
+      p_vector[,attr(dadm,"ordinal")] <- exp(p_vector[,attr(dadm,"ordinal")]) else
+        p_vector[attr(dadm,"ordinal")] <- exp(p_vector[attr(dadm,"ordinal")])
 
-  attr(dadm,"model")()$Ttransform(
-    attr(dadm,"model")()$Ntransform(
-      map_p(
-        attr(dadm,"model")()$transform(add_constants(p_vector,attr(dadm,"constants"))),
-        dadm)),
-    dadm)
+      attr(dadm,"model")()$Ttransform(
+        attr(dadm,"model")()$Ntransform(
+          map_p(
+            attr(dadm,"model")()$transform(add_constants(p_vector,attr(dadm,"constants"))),
+            dadm),attr(dadm, "transform_names")),
+        dadm)
 }
 
 get_design <- function(samples)
@@ -152,18 +152,25 @@ mapped_par <- function(p_vector,design,model=NULL,
   }
   Fcovariates <- design$Fcovariates
   if (is.null(model)) if (is.null(design$model))
-  stop("Must specify model as not in design") else model <- design$model
-  if (remove_subjects) design$Ffactors$subjects <- design$Ffactors$subjects[1]
-  if (!is.matrix(p_vector)) p_vector <- make_pmat(p_vector,design)
-  dadm <- design_model(make_data(p_vector,design,n_trials=1,Fcovariates=Fcovariates),
-                       design,model,rt_check=FALSE,compress=FALSE)
-  ok <- !(names(dadm) %in% c("subjects","trials","R","rt","winner"))
-  out <- cbind(dadm[,ok],round(get_pars(p_vector,dadm),digits))
-  if (model()$type=="SDT")  out <- out[dadm$lR!=levels(dadm$lR)[length(levels(dadm$lR))],]
-  if (model()$type=="DDM")  out <- out[,!(names(out) %in% c("lR","lM"))]
-  if (any(names(out)=="RACE") && remove_RACE)
-    out <- out[as.numeric(out$lR) <= as.numeric(as.character(out$RACE)),,drop=FALSE]
-  return(out)
+    stop("Must specify model as not in design") else model <- design$model
+    if (remove_subjects) design$Ffactors$subjects <- design$Ffactors$subjects[1]
+    if (!is.matrix(p_vector)) p_vector <- make_pmat(p_vector,design)
+    dadm <- design_model(make_data(p_vector,design,n_trials=1,Fcovariates=Fcovariates),
+                         design,model,rt_check=FALSE,compress=FALSE)
+    ok <- !(names(dadm) %in% c("subjects","trials","R","rt","winner"))
+    if (!is.null(attr(dadm,"advantage"))) {
+      na <- length(levels(dadm$lR))-1
+      adadm <- data.frame(lapply(dadm,rep,each=na))
+      adadm$lA <- rep(1:(na),length.out=nrow(dadm))
+      message("Advantage model: added column lA for accumulators within lR")
+      ok <- c(ok,TRUE)
+    } else adadm <- dadm
+    out <- cbind(adadm[,ok],round(get_pars(p_vector,dadm),digits))
+    if (model()$type=="SDT")  out <- out[adadm$lR!=levels(adadm$lR)[length(levels(dadm$lR))],]
+    if (model()$type=="DDM")  out <- out[,!(names(out) %in% c("lR","lM"))]
+    if (any(names(out)=="RACE") && remove_RACE)
+      out <- out[as.numeric(out$lR) <= as.numeric(as.character(out$RACE)),,drop=FALSE]
+    return(out)
 }
 
 
@@ -184,12 +191,16 @@ map_mcmc <- function(mcmc,design,model, include_constants = TRUE)
 
   map <- attr(sampled_p_vector(design, add_da = TRUE, all_cells_dm = TRUE),"map")
   constants <- design$constants
+  mcmc <- mcmc[,!(dimnames(mcmc)[[2]] %in% names(constants))]
   mp <- mapped_par(mcmc[1,],design,remove_RACE=FALSE)
   pmat <- model()$transform(add_constants(mcmc,constants))
   plist <- lapply(map,doMap,pmat=pmat)
   if (model()$type=="SDT") {
-    ht <- apply(map$threshold[,grepl("lR",dimnames(map$threshold)[[2]]),drop=FALSE],1,sum)
-    plist$threshold <- plist$threshold[,ht!=max(ht),drop=FALSE]
+    islR <- grepl("lR",dimnames(map$threshold)[[2]])
+    if (any(islR)) {
+      ht <- apply(map$threshold[,islR,drop=FALSE],1,sum)
+      plist$threshold <- plist$threshold[,ht!=max(ht),drop=FALSE]
+    }
   }
   # Give mapped variables names and flag constant
   isConstant <- NULL
@@ -206,8 +217,9 @@ map_mcmc <- function(mcmc,design,model, include_constants = TRUE)
   pmat <- do.call(cbind,plist)
   cnams <- dimnames(pmat)[[2]]
   dimnames(pmat)[[2]] <- get_p_types(cnams)
-  out <- model()$Ntransform(pmat)[,1:length(cnams)]
+  out <- model()$Ntransform(pmat,use=attr(design$dynamic,"transform_names"))[,1:length(cnams)]
   dimnames(out)[[2]] <- cnams
+  isConstant[is.na(isConstant)] <- TRUE
   if(!include_constants) out <- out[,!isConstant]
   out <- as.mcmc(out)
   attr(out,"isConstant") <- isConstant
