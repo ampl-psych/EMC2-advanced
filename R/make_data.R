@@ -15,7 +15,7 @@
 #' @return Truncated and censored data frame
 
 make_missing <- function(data,LT=0,UT=Inf,LC=0,UC=Inf,
-    LCresponse=TRUE,UCresponse=TRUE,LCdirection=TRUE,UCdirection=TRUE)
+                         LCresponse=TRUE,UCresponse=TRUE,LCdirection=TRUE,UCdirection=TRUE)
 {
 
   censor <- function(data,L=0,U=Inf,Ld=TRUE,Ud=TRUE,Lr=TRUE,Ur=TRUE)
@@ -99,7 +99,7 @@ make_missing <- function(data,LT=0,UT=Inf,LC=0,UC=Inf,
 #' @export
 
 make_data <- function(p_vector,design,n_trials=NULL,data=NULL,expand=1,
-  mapped_p=FALSE, ...)
+                      mapped_p=FALSE, ...)
 {
   # #' @param LT lower truncation bound below which data are removed (scalar or subject named vector)
   # #' @param UT upper truncation bound above which data are removed (scalar or subject named vector)
@@ -148,7 +148,7 @@ make_data <- function(p_vector,design,n_trials=NULL,data=NULL,expand=1,
       stop("If data is not provided need to specify number of trials")
     Ffactors=c(design$Ffactors,list(trials=1:n_trials))
     data <- as.data.frame.table(array(dim=unlist(lapply(Ffactors,length)),
-                                        dimnames=Ffactors))
+                                      dimnames=Ffactors))
     for (i in names(design$Ffactors))
       data[[i]] <- factor(data[[i]],levels=design$Ffactors[[i]])
     names(data)[dim(data)[2]] <- "R"
@@ -259,7 +259,7 @@ make_data <- function(p_vector,design,n_trials=NULL,data=NULL,expand=1,
   data <- data[data$lR==levels(data$lR)[1],!(names(data) %in% dropNames)]
   for (i in dimnames(Rrt)[[2]]) data[[i]] <- Rrt[,i]
   data <- make_missing(data[,names(data)!="winner"],LT,UT,LC,UC,
-    LCresponse,UCresponse,LCdirection,UCdirection)
+                       LCresponse,UCresponse,LCdirection,UCdirection)
   if ( !is.null(pc) ) {
     if (!any(is.infinite(data$rt)) & any(is.na(data$R)))
       stop("Cannot have contamination and censoring with no direction and response")
@@ -269,7 +269,7 @@ make_data <- function(p_vector,design,n_trials=NULL,data=NULL,expand=1,
       if ( (LCdirection & UCdirection) &  !rtContaminantNA)
         stop("Cannot have contamination with a mixture of censor directions")
       if (rtContaminantNA & ((is.finite(LC) & !LCresponse & !LCdirection) |
-                              (is.finite(UC) & !UCresponse & !UCdirection)))
+                             (is.finite(UC) & !UCresponse & !UCdirection)))
         stop("Cannot have contamination and censoring with no direction and response")
       if (rtContaminantNA | (!LCdirection & !UCdirection)) data[contam,"rt"] <- NA else
         if (LCdirection) data[contam,"rt"] <- -Inf  else data[contam,"rt"] <- Inf
@@ -383,15 +383,15 @@ post_predict <- function(samplers,hyper=FALSE,n_post=100,
       for (i in 1:n_post) {
         cat(".")
         simDat[[i]] <- make_data(pars[[i]],design=design[[j]],data=data[[j]],expand=expand,
-          force_direction = force_direction,force_response=force_response,
-          LCresponse=LCresponse,UCresponse=UCresponse,LCdirection=LCdirection,UCdirection=UCdirection)
+                                 force_direction = force_direction,force_response=force_response,
+                                 LCresponse=LCresponse,UCresponse=UCresponse,LCdirection=LCdirection,UCdirection=UCdirection)
       }
       cat("\n")
     } else {
       simDat <- mclapply(1:n_post,function(i){
         make_data(pars[[i]],design=design[[j]],data=data[[j]],expand=expand,
-          force_direction = force_direction,force_response=force_response,
-          LCresponse=LCresponse,UCresponse=UCresponse,LCdirection=LCdirection,UCdirection=UCdirection)
+                  force_direction = force_direction,force_response=force_response,
+                  LCresponse=LCresponse,UCresponse=UCresponse,LCdirection=LCdirection,UCdirection=UCdirection)
       },mc.cores=n_cores)
     }
     if (!is.null(attr(simDat[[1]],"adapt"))) adapt <- attr(simDat[[1]],"adapt")
@@ -443,5 +443,4 @@ make_random_effects <- function(design, group_means, n_subj, variance_proportion
   rownames(random_effects) <- as.character(1:n_subj)
   return(random_effects)
 }
-
 
