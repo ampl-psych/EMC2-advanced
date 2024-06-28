@@ -1,4 +1,10 @@
 .Rproj.user
+*.Rhistory
 .Rhistory
 .RData
-.Ruserdata
+test.R
+*.so
+*.o
+*.RData
+*.pdf
+.DS_Store

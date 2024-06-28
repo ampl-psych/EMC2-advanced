@@ -1,2 +1,5 @@
-^.*\.Rproj$
+^EMC2\.Rproj$
 ^\.Rproj\.user$
+^test_files$
+^LICENSE\.md$
+^\.github$
