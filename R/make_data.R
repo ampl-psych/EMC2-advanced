@@ -13,9 +13,11 @@
 #' @param UCdirection Boolean, default TRUE, set LC rt to Inf, else to NA
 #'
 #' @return Truncated and censored data frame
+#' @export
 
 make_missing <- function(data,LT=0,UT=Inf,LC=0,UC=Inf,
-                         LCresponse=TRUE,UCresponse=TRUE,LCdirection=TRUE,UCdirection=TRUE)
+                         LCresponse=TRUE,UCresponse=TRUE,LCdirection=TRUE,UCdirection=TRUE,pc=NULL,
+                         verbose=TRUE)
 {
 
   censor <- function(data,L=0,U=Inf,Ld=TRUE,Ud=TRUE,Lr=TRUE,Ur=TRUE)
@@ -39,13 +41,122 @@ make_missing <- function(data,LT=0,UT=Inf,LC=0,UC=Inf,
   }
 
   pick <- is.infinite(data$rt) | (data$rt>LT & data$rt<UT)
+  if (verbose & (!any(pick))) message("Proportion of data truncated: ",mean(pick))
   pick[is.na(pick)] <- TRUE
   out <- censor(data[pick,],L=LC,U=UC,Lr=LCresponse,Ur=UCresponse,Ld=LCdirection,Ud=UCdirection)
-  if (LC != 0) attr(out,"LC") <- LC
-  if (UC != Inf) attr(out,"UC") <- UC
-  if (LT != 0) attr(out,"LT") <- LT
-  if (UT != Inf) attr(out,"UT") <- UT
+  if (any(LC != 0)) attr(out,"LC") <- LC
+  if (any(UC != Inf)) attr(out,"UC") <- UC
+  if (any(LT != 0)) attr(out,"LT") <- LT
+  if (any(UT != Inf)) attr(out,"UT") <- UT
+  if (!is.null(pc)) attr(out,"pc") <- pc[pick]
   out
+}
+
+
+make_dadm_N <- function(pmwgs,N)
+  # Makes a dadm for N subjects from emc object
+{
+  dadm <- pmwgs[[1]]$data[[1]]
+  for (i in names(attr(dadm, "model")()$p_types)) {
+    attr(attr(dadm, "designs")[[i]], "expand") <- rep(1,N)
+  }
+  dattr <- attributes(dadm)
+  dattr$row.names <- 1:N
+  dadm <- dadm[rep(1,N),,drop=FALSE]
+  attributes(dadm) <- dattr
+  dadm$subjects <- 1:N
+  levels(dadm$subjects) <-  1:N
+  dadm
+}
+
+
+#' hyper prediction
+#'
+#' creates data sets by sampling from the posterior of an emc object
+#' repeatedly trys to get good parameters (satisfying ok conditions) and good
+#' data sets (not returning NA from simulation)
+#'
+#' @param pmwgs and emc object
+#' @param N number of participants
+#' @param n_trials number of trials per cell
+#' @param return_pars return pars instead of simulated data
+#' @param use_prior logical, default FALSE, if TRUE sample from prior
+#' @param max_trys maximum trys to get valid parameters (in lots of N)
+#' @param use_alpha sample parameters from random effects (alpha) with equal
+#' probability for sample (aggregated over subjects)
+#'
+#' @return simulated data or a parameter matrix
+hyper_prediction <- function(pmwgs,N=1,n_trials=100,use_alpha=FALSE,
+                             return_pars=FALSE,use_prior=FALSE,max_trys=100) {
+  design <- attr(pmwgs,"design_list")[[1]]
+  prior <- pmwgs[[1]]$prior
+  if (!use_prior & !use_alpha) {
+    prior$theta_mu_mean <- plot_pars(pmwgs,do_plot = FALSE, selection = "mu")[2,]
+    diag(prior$theta_mu_var) <- plot_pars(pmwgs,do_plot = FALSE, selection = "variance")[2,]
+    cov <- plot_pars(pmwgs,do_plot = FALSE, selection = "covariance")[2,]
+    prior$theta_mu_var[lower.tri(prior$theta_mu_var)] <- cov
+    tmp <- t(prior$theta_mu_var)
+    tmp[lower.tri(prior$theta_mu_var)] <- cov
+    prior$theta_mu_var <- tmp
+  }
+  design$Ffactors$subjects <- 1:N
+  out <- NULL
+  outd <- vector(mode="list",length=N)
+  trys <- 1
+  if (use_alpha) alpha <- parameters_data_frame(pmwgs,selection="alpha")[,-1]
+  repeat {
+    if (is.null(out)) {
+      if (use_alpha) out <- as.matrix(alpha[sample(1:nrow(alpha),N),]) else
+        out <- as.matrix(plot_prior(prior,design,selection="alpha",N=N,do_plot=FALSE,mapped=FALSE))
+      row.names(out) <- 1:N
+      dadmN <- make_dadm_N(pmwgs,N)
+      ok <- setNames(attr(get_pars(out,dadmN),"ok"),1:N)
+      nfail <- sum(!ok)
+      if (!return_pars) {
+        designi <- design
+        oks <- designi$Ffactors$subjects[ok]
+        designi$Ffactors$subjects <- oks
+        outd <- make_data(out[ok,],designi,n_trials=n_trials)
+        okd <- tapply(outd$R,outd$subjects,\(x)all(!is.na(x)))
+        ok[names(okd)] <- okd
+        if (!any(ok)) outd <- NULL else
+          outd <- outd[outd$subjects %in% names(ok[ok]),,drop=FALSE]
+        nfaild <- sum(!okd)
+      } else nfaild <- 0
+      if (all(ok)) break else Ni <- sum(!ok)
+    } else {
+      designi <- design
+      oks <- design$Ffactors$subjects[!ok]
+      designi$Ffactors$subjects <- oks
+      if (use_alpha) out[!ok,] <- as.matrix(alpha[sample(1:nrow(alpha),Ni),]) else
+        out[!ok,] <- as.matrix(plot_prior(prior,designi,selection="alpha",N=Ni,do_plot=FALSE,mapped=FALSE))
+      dadmN <- make_dadm_N(pmwgs,length(oks))
+      p <- out[!ok,,drop=FALSE]
+      row.names(p) <- 1:sum(!ok)
+      oki <- attr(get_pars(p,dadmN),"ok")
+      nfail <- nfail + sum(!oki)
+      if (any(oki)) {
+        oks <- oks[oki]
+        designi$Ffactors$subjects <- oks
+        tmp <- make_data(out[oks,],designi,n_trials=n_trials)
+        okd <- tapply(tmp$R,tmp$subjects,\(x)all(!is.na(x)))
+        nfaild <- nfaild + sum(!okd)
+        if (any(okd)) {
+          outd <- rbind(outd,tmp[tmp$subjects %in% names(okd[okd]),])
+          ok[names(okd[okd])] <- TRUE
+        }
+      }
+      if (all(ok)) break else Ni <- sum(!ok)
+      trys <- trys + 1
+      if (trys > max_trys) break
+    }
+  }
+  if (trys>max_trys) stop("Gave up after ",max_trys," attempts to get ",N," good parameter sets.")
+  if (nfail>0) message("Parameter generation failed ",nfail," times to get ",N," parameter sets.")
+  if (return_pars) return(out)
+  if (nfaild>0) message("Data generation failed ",nfaild," times to get ",N," data sets.")
+  attr(outd,"pars") <- out
+  outd
 }
 
 
@@ -137,6 +248,7 @@ make_data <- function(p_vector,design,n_trials=NULL,data=NULL,expand=1,
     assign(name, optionals[[name]])
   }
 
+
   if (is.list(p_vector))
     p_vector <- do.call(rbind,lapply(p_vector,function(x)x[2,]))
   model <- design$model
@@ -149,8 +261,9 @@ make_data <- function(p_vector,design,n_trials=NULL,data=NULL,expand=1,
     Ffactors=c(design$Ffactors,list(trials=1:n_trials))
     data <- as.data.frame.table(array(dim=unlist(lapply(Ffactors,length)),
                                       dimnames=Ffactors))
-    for (i in names(design$Ffactors))
+    for (i in names(design$Ffactors)){
       data[[i]] <- factor(data[[i]],levels=design$Ffactors[[i]])
+    }
     names(data)[dim(data)[2]] <- "R"
     data$R <- factor(data$R,levels=design$Rlevels)
     data$trials <- as.numeric(as.character(data$trials))
@@ -173,30 +286,6 @@ make_data <- function(p_vector,design,n_trials=NULL,data=NULL,expand=1,
       empty_covariates <- names(design$Fcovariates)[!(names(design$Fcovariates) %in% names(data))]
       if (length(empty_covariates)>0) data[,empty_covariates] <- 0
     }
-  } else {
-    LT <- attr(data,"LT"); if (is.null(LT)) LT <- 0
-    UT <- attr(data,"UT"); if (is.null(UT)) UT <- Inf
-    LC <- attr(data,"LC"); if (is.null(LC)) LC <- 0
-    UC <- attr(data,"UC"); if (is.null(UC)) UC <- Inf
-    if (!force_direction) {
-      ok <- data$rt==-Inf; ok[is.na(ok)] <- FALSE
-      LCdirection <- any(ok)
-      ok <- data$rt==Inf; ok[is.na(ok)] <- FALSE
-      UCdirection=any(ok)
-    }
-    if (!force_response) {
-      if (!any(is.infinite(data$rt)) & any(is.na(data$R))) {
-        LCresponse <- UCresponse <- FALSE
-      } else {
-        ok <- data$rt==-Inf
-        bad <- is.na(ok)
-        LCresponse <- !any(ok[!bad] & is.na(data$R[!bad]))
-        ok <- data$rt==Inf
-        bad <- is.na(ok)
-        UCresponse <- !any(ok[!bad] & is.na(data$R[!bad]))
-      }
-    }
-    data <- add_trials(data[order(data$subjects),])
   }
   if (!is.factor(data$subjects)) data$subjects <- factor(data$subjects)
   if (!is.null(model)) {
@@ -214,22 +303,14 @@ make_data <- function(p_vector,design,n_trials=NULL,data=NULL,expand=1,
     p_vector[,attr(design,"ordinal")] <- exp(p_vector[,attr(design,"ordinal")])
   pars <- model()$Ttransform(model()$Ntransform(map_p(
     model()$transform(add_constants(p_vector,design$constants)),data
-  )),data)
+  ),attr(design,"transform_names")),data)
+
+  # if (!is.null(attr(data,"isRL"))) data <- data[,!(names(data) %in% attr(data,"isRL"))]
+
   if ( any(dimnames(pars)[[2]]=="pContaminant") && any(pars[,"pContaminant"]>0) )
     pc <- pars[data$lR==levels(data$lR)[1],"pContaminant"] else pc <- NULL
-  if (!is.null(design$adapt)) {
-    if (expand>1) {
-      expand <- 1
-      warning("Expand does not work with this type of model")
-    }
-    # data <- adapt_data(data,design,model,pars,mapped_p=mapped_p,add_response = TRUE)
-    if (mapped_p) return(data)
-    adapt <- attr(data,"adapt")
-    data <- data[data$lR==levels(data$lR)[1],!(names(data) %in% c("lR","lM"))]
-    if('Qvalues' %in% names(attributes(pars))) attr(data, 'Qvalues') <- attr(pars, 'Qvalues')
-    if('predictionErrors' %in% names(attributes(pars))) attr(data, 'predictionErrors') <- attr(pars, 'predictionErrors')
-    attr(data,"adapt") <- adapt
-    return(data)
+  if ((!is.null(design$adaptive) | !is.null(design$dynamic)) & expand>1) {
+    warning("Expand may not work properly with some adaptive and dynamic models")
   }
   if (mapped_p) return(cbind(data[,!(names(data) %in% c("R","rt"))],pars))
   if (expand>1) {
@@ -239,6 +320,7 @@ make_data <- function(p_vector,design,n_trials=NULL,data=NULL,expand=1,
     pars <- apply(pars,2,rep,times=expand)
   } else lR <- data$lR
   if (any(names(data)=="RACE")) {
+    if (!is.null(dynamic_cv)) stop("RACE data not yet supported with dynamic_cv")
     Rrt <- matrix(ncol=2,nrow=dim(data)[1]/length(levels(data$lR)),
                   dimnames=list(NULL,c("R","rt")))
     RACE <- data[data$lR==levels(data$lR)[1],"RACE"]
@@ -251,31 +333,41 @@ make_data <- function(p_vector,design,n_trials=NULL,data=NULL,expand=1,
       Rrt[RACE==i,] <- as.matrix(Rrti)
     }
     Rrt <- data.frame(Rrt)
-    Rrt$R <- factor(Rrt$R,labels=levels(lR))
-  } else Rrt <- model()$rfun(lR,pars)
-  dropNames <- c("lR","lM","lSmagnitude")
+    Rrt$R <- factor(Rrt$R,labels=levels(lR),levels=1:length(levels(lR)))
+  } else {
+    if (!is.null(dynamic_cv)) {
+      Rrt <- dynamic_rfun(dynamic_cv,p_vector,data,design)
+    } else Rrt <- model()$rfun(lR,pars)
+  }
+
+  dropNames <- c("lR","lM","lSmagnitude",attr(data, "isRL"))
+
   if (!return_Ffunctions && !is.null(design$Ffunctions))
     dropNames <- c(dropNames,names(design$Ffunctions) )
   data <- data[data$lR==levels(data$lR)[1],!(names(data) %in% dropNames)]
   for (i in dimnames(Rrt)[[2]]) data[[i]] <- Rrt[,i]
-  data <- make_missing(data[,names(data)!="winner"],LT,UT,LC,UC,
-                       LCresponse,UCresponse,LCdirection,UCdirection)
+  if (!all(is.na(data$rt))) data <- make_missing(data[,names(data)!="winner"],LT,UT,LC,UC,
+                                                 LCresponse,UCresponse,LCdirection,UCdirection,pc)
   if ( !is.null(pc) ) {
+    pc <- attr(data,"pc")
+    attr(data,"pc") <- NULL
     if (!any(is.infinite(data$rt)) & any(is.na(data$R)))
       stop("Cannot have contamination and censoring with no direction and response")
     contam <- runif(length(pc)) < pc
     data[contam,"R"] <- NA
-    if ( LC!=0 | is.finite(UC) ) { # censoring
+    if ( any(LC!=0) | any(is.finite(UC)) ) { # censoring
       if ( (LCdirection & UCdirection) &  !rtContaminantNA)
         stop("Cannot have contamination with a mixture of censor directions")
-      if (rtContaminantNA & ((is.finite(LC) & !LCresponse & !LCdirection) |
-                             (is.finite(UC) & !UCresponse & !UCdirection)))
+      if (rtContaminantNA & ((any(is.finite(LC)) & !LCresponse & !LCdirection) |
+                             (any(is.finite(UC)) & !UCresponse & !UCdirection)))
         stop("Cannot have contamination and censoring with no direction and response")
       if (rtContaminantNA | (!LCdirection & !UCdirection)) data[contam,"rt"] <- NA else
         if (LCdirection) data[contam,"rt"] <- -Inf  else data[contam,"rt"] <- Inf
     } else data[contam,"rt"] <- NA
   }
-  attr(data,"p_vector") <- p_vector;
+  attr(data,"p_vector") <- p_vector
+  if (!is.null(Rrt) && !is.null(attr(Rrt,"timer_wins")))
+    attr(data,"timer_wins") <-  attr(Rrt,"timer_wins")
   data
 }
 
@@ -328,14 +420,6 @@ post_predict <- function(samplers,hyper=FALSE,n_post=100,
   # hyper=FALSE draws from alphas (participant level)
   # hyper=TRUE draws from hyper
 {
-  # #' @param force_direction Boolean, take censor direction from argument not samples (default FALSE)
-  # #' @param force_response Boolean, take censor response from argument not samples (default FALSE)
-  # #' @param LCresponse Boolean, default TRUE, if false set LC response to NA
-  # #' @param UCresponse Boolean, default TRUE, if false set UC response to NA
-  # #' @param LCdirection Boolean, default TRUE, set LC rt to 0, else to NA
-  # #' @param UCdirection Boolean, default TRUE, set LC rt to Inf, else to NA
-  # #' @param expand Integer. Default is 1, exact same design for each subject. Larger values will replicate designs, so more trials per subject.
-
   LCresponse<-TRUE; UCresponse<-TRUE; LCdirection<-TRUE; UCdirection<-TRUE
   force_direction <- FALSE; force_response <- FALSE;expand <- 1
   optionals <- list(...)
@@ -443,4 +527,3 @@ make_random_effects <- function(design, group_means, n_subj, variance_proportion
   rownames(random_effects) <- as.character(1:n_subj)
   return(random_effects)
 }
-
