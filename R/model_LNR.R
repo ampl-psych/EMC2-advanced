@@ -90,9 +90,13 @@ LNR <- function() {
     type="RACE",
     c_name = "LNR",
     p_types=c("m" = 1,"s" = log(1),"t0" = log(0)),
-    Ntransform=function(x) {
-      # Transform to natural scale
-      x[,dimnames(x)[[2]] != "m"] <- exp(x[,dimnames(x)[[2]] != "m"])
+    Ntransform=function(x,use=NULL) {
+      if (is.null(use)) {
+        x[,dimnames(x)[[2]] != "m"] <- exp(x[,dimnames(x)[[2]] != "m"])
+      } else if (!all(use=="m")) {
+        ok <- use[use != "m"]
+        x[,ok] <- exp(x[,ok])
+      }
       x
     },
     # p_vector transform scaling parameter by s=1 assumed in lnr.R

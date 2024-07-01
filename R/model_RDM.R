@@ -377,9 +377,14 @@ RDM <- function(){
     c_name = "RDM",
     p_types=c("v" = log(1),"B" = log(1),"A" = log(0),"t0" = log(0),"s" = log(1)),
     # Transform to natural scale
-    Ntransform=function(x) {
+    Ntransform=function(x,use=NULL) {
       # transform parameters back to real line
-      exp(x)
+      if (is.null(use)) {
+        x <- exp(x)
+      } else {
+        x[,use] <- exp(x[,use])
+      }
+      x
     },
     # p_vector transform
     transform = function(x) x,

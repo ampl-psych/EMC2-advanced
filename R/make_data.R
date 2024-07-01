@@ -210,7 +210,7 @@ hyper_prediction <- function(pmwgs,N=1,n_trials=100,use_alpha=FALSE,
 #' @export
 
 make_data <- function(p_vector,design,n_trials=NULL,data=NULL,expand=1,
-                      mapped_p=FALSE, ...)
+                     mapped_p=FALSE, ...)
 {
   # #' @param LT lower truncation bound below which data are removed (scalar or subject named vector)
   # #' @param UT upper truncation bound above which data are removed (scalar or subject named vector)
@@ -242,7 +242,9 @@ make_data <- function(p_vector,design,n_trials=NULL,data=NULL,expand=1,
   force_response<-FALSE
   rtContaminantNA<-FALSE
   return_Ffunctions <- FALSE
-  Fcovariates=NULL
+  dynamic_cv <- NULL
+  Fcovariates <- NULL
+  remap <- NULL
   optionals <- list(...)
   for (name in names(optionals) ) {
     assign(name, optionals[[name]])

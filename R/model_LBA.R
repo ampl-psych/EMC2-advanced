@@ -234,8 +234,13 @@ LBA <- function(){
     p_types=c("v" = 1,"sv" = log(1),"B" = log(1),"A" = log(0),"t0" = log(0)),
     transform = function(p) p,
     # Transform to natural scale
-    Ntransform=function(x) {
-      x[,dimnames(x)[[2]] != "v"] <- exp(x[,dimnames(x)[[2]] != "v"])
+    Ntransform=function(x,use=NULL) {
+      if (is.null(use)) {
+        x[,dimnames(x)[[2]] != "v"] <- exp(x[,dimnames(x)[[2]] != "v"])
+      } else if (!all(use=="v")) {
+        ok <- use[use != "v"]
+        x[,ok] <- exp(x[,ok])
+      }
       x
     },
     # Trial dependent parameter transform

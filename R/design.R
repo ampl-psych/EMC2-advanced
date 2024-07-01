@@ -197,7 +197,7 @@ make_design <- function(formula = NULL,factors = NULL,Rlevels = NULL,model,data=
   }
 
   if (model()$type=="SDT") {
-    contrasts[["lR"]] <- contr.increasing(length(Rlevels),Rlevels)
+    contrasts[["lR"]] <- contr.increasing(length(Rlevels))
   }
 
   design <- list(Flist=formula,Ffactors=factors,Rlevels=Rlevels,
@@ -366,6 +366,7 @@ contr.increasing <- function(n)
   contr[lower.tri(contr)] <- 1
   contr
 }
+
 
 #' Contrast to enforce decreasing estimates
 #'
