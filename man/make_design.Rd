@@ -17,6 +17,11 @@ make_design(
   functions = NULL,
   report_p_vector = TRUE,
   custom_p_vector = NULL,
+  ordinal = NULL,
+  dynamic = NULL,
+  adaptive = NULL,
+  omit_transform = NULL,
+  advantage = NULL,
   ...
 )
 }
@@ -68,7 +73,61 @@ parameters to be estimated.}
 \item{custom_p_vector}{A character vector. If specified, a custom likelihood
 function can be supplied.}
 
-\item{...}{Additional, optional arguments}
+\item{ordinal}{For future compatibility}
+
+\item{dynamic}{List with names of dynamic parameters and associated attributes
+specifying a dynamic transformation for that parameter in the form of a list
+with entries:
+\enumerate{
+\item covnames: a vector of names (c1, c2, ...) of covariates in the dadm to be
+used in the dynamic transformation
+\item dyntype: string specifying kernel (k), with parameter (if any) 3x where x
+x is the kernel name. Kernels are multiplied by parameter 2x and added to
+the base parameter. Supported kernels are:
+decreasing linear, "ld"      ( k <- -c1 );
+decreasing exponential, "ed" ( k <- exp(-3ed * c1) )
+decreasing power, "pd"       ( k <- (1+c1)^-3pd )
+increasing linear, "li"      ( k <- c1)
+increasing exponential "ei"  ( k <- 1-exp(-3ei * c1) )
+increasing power "pi"        ( k <- 1-(1+c1)^-3pi )
+OR quadratic to quadratic polynomials that are added to the base parameter,
+with parameters 1x, 2x, 3x, 4x, where p2: 1p2 x c1 + 2p2 x c1^2;
+p3: 1p3 x c1 + 2p3 x c1^2 + 3p3 x c1^3; and p4: 1p4 x c1 + 2p4 x c1^2 +
+3p4 x c1^3 + 4p4 x c1^4
+OR learning rules, d1 (standard delta rule) and d2 (dual kernel delta rule)
+each coming in three flavors d1U/d2U: learning target is on 0-1 (starting
+value estimated on probit scale); d1P/d2P: learning target positive
+(starting value estimated on log scale); d1/d2: unbounded learning target.
+\item maptype: optional string specifying the linear mapping of kernel or
+polynomial (k) to parameter (p), with scale parameter 1p, with types
+linear, "lin":              ( p <- p + 1p*k )
+positive linear "plin":     ( p <- exp(p) + exp(1p)*k )
+additive "add":             ( p <- p + k, used for polynomial which uses 1p)
+unit centered "ucent:       ( p <- p + 1p x (k-.5) )
+lin is default if not specified
+\item transform: optional logical, default TRUE, apply transformation to parameter type
+(i.e., to sampled parameters combined by the linear formula)
+\item equal_accumulators: boolean, apply dynamic equally to all accumulators.
+default is TRUE.
+\item dnames: optional vector of names of the dntype parameters that are pasted
+to the base type to get sampled parameters (if not specified the 1x ...
+form above is used)
+\item shared: logical default FALSE. If TRUE the base parameter name is not
+pasted so the parameter can be shared across dynamic parameters. If length=1
+sharing applied to all parameters, otherwise have length = number of dynamic
+parameters.
+}}
+
+\item{adaptive}{List with names of parameter types (i.e., after mapping) to
+make adaptive. Structure of list as for dynamic except dnames is anames and
+transform and equal_accumulators defaults are FALSE}
+
+\item{omit_transform}{Names of parameter types to NOT transform as specified in the model}
+
+\item{advantage}{vector with parameter type name with the name of the function
+that generates stimulus values}
+
+\item{...}{Additional optionial arguments}
 }
 \value{
 A design list.

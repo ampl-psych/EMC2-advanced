@@ -8,3 +8,4 @@ test.R
 *.RData
 *.pdf
 .DS_Store
+.Rproj
