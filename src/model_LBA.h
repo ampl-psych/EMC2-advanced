@@ -3,6 +3,9 @@
 
 #include <Rcpp.h>
 #include "utility_functions.h"
+#include "dynamic.h"
+#include "advantage.h"
+
 
 using namespace Rcpp;
 
@@ -96,9 +99,9 @@ NumericVector dlba_c(NumericVector rts, NumericMatrix pars, LogicalVector idx, d
   int k = 0;
   for(int i = 0; i < rts.length(); i++){
     if(idx[i] == TRUE){
-      if(!NumericVector::is_na(pars(i,0)) && (rts[i] - pars(i,4) > 0) && (pars(i,2) >= 0) && (pars(i,4) > 0.05) &&
-         ((pars(i,3) > 1e-6) || (pars(i,3) == 0)) &&
-         ((pars(i,0) > -100) && (pars(i,0) < 100)) && ((pars(i,1) > 1e-3) || (pars(i,1) == 0)) ){
+      if(!NumericVector::is_na(pars(i,0)) & (rts[i] - pars(i,4) > 0) & (pars(i,2) >= 0) & (pars(i,4) > 0.05) &
+         ((pars(i,3) > 1e-6) | (pars(i,3) == 0)) &
+         ((pars(i,0) > -100) & (pars(i,0) < 100)) & ((pars(i,1) > 1e-3) | (pars(i,1) == 0)) ){
         out[k] = dlba_norm(rts[i] - pars(i,4), pars(i,3), pars(i,2) + pars(i,3), pars(i,0), pars(i,1), true, false);
       } else{
         out[k] = min_ll;
@@ -116,9 +119,9 @@ NumericVector plba_c(NumericVector rts, NumericMatrix pars, LogicalVector idx, d
   int k = 0;
   for(int i = 0; i < rts.length(); i++){
     if(idx[i] == TRUE){
-      if(!NumericVector::is_na(pars(i,0)) && (rts[i] > 0) && (pars(i,2) >= 0) && (pars(i,4) > 0.05) &&
-         ((pars(i,3) > 1e-6) || (pars(i,3) == 0)) &&
-         ((pars(i,0) > -100) && (pars(i,0) < 100)) && ((pars(i,1) > 1e-3) || (pars(i,1) == 0)) ){
+      if(!NumericVector::is_na(pars(i,0)) & (rts[i] > 0) & (pars(i,2) >= 0) & (pars(i,4) > 0.05) &
+         ((pars(i,3) > 1e-6) | (pars(i,3) == 0)) &
+         ((pars(i,0) > -100) & (pars(i,0) < 100)) & ((pars(i,1) > 1e-3) | (pars(i,1) == 0)) ){
         out[k] = plba_norm(rts[i] - pars(i,4), pars(i,3), pars(i,2) + pars(i,3), pars(i,0), pars(i,1), true, false);
       } else{
         out[k] = min_ll;
@@ -129,14 +132,31 @@ NumericVector plba_c(NumericVector rts, NumericMatrix pars, LogicalVector idx, d
   return(out);
 }
 
-NumericMatrix Ntransform_lba(NumericMatrix x) {
+NumericMatrix Ntransform_lba(NumericMatrix x, CharacterVector use, DataFrame data, List adaptive) {
   NumericMatrix out(clone(x));
   LogicalVector col_idx = contains(colnames(x), "v");
+  LogicalVector use_idx = contains_multiple(colnames(x), use);
+
   for(int i = 0; i < x.ncol(); i ++){
-    if(col_idx[i] == FALSE){
-      out (_, i) = exp(out(_, i));
-    };
+    if(use_idx[i] == TRUE){
+      if(col_idx[i] == FALSE){
+        out (_, i) = exp(out(_, i));
+      };
+    }
   };
+  if(adaptive.length() > 0){
+    out = map_adaptive(adaptive, out, data);
+  }
+
+  List advantage = data.attr("advantage");
+  if(advantage.length() > 0){
+    String par_name = advantage.names();
+    String S_name = advantage[0];
+    NumericVector SV = data[S_name];
+    CharacterVector R = data["R"];
+    out = advantagepars(out, SV,unique(R).length(),par_name);
+  }
+
   return(out);
 }
 
