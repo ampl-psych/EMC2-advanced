@@ -339,10 +339,12 @@ make_data <- function(p_vector,design,n_trials=NULL,data=NULL,expand=1,
   } else {
     if (!is.null(dynamic_cv)) {
       Rrt <- dynamic_rfun(dynamic_cv,p_vector,data,design)
+    } else if (any(names(design$Ffunctions)=="staircase")) {
+      Rrt <- design$Ffunctions$staircase(data,pars=pars)
     } else Rrt <- model()$rfun(lR,pars)
   }
 
-  dropNames <- c("lR","lM","lSmagnitude",attr(data, "isRL"))
+  dropNames <- c("lR","lM","lSmagnitude",attr(data, "isRL"),"staircase","lI")
 
   if (!return_Ffunctions && !is.null(design$Ffunctions))
     dropNames <- c(dropNames,names(design$Ffunctions) )
