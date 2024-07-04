@@ -311,11 +311,11 @@ run_stage <- function(pmwgs,
         for(component in unq_components){
           idx <- components[!grouped] == component
           acc <-  pmwgs$samples$alpha[max(which(idx)),,j] != pmwgs$samples$alpha[max(which(idx)),,(j-1)]
-          epsilon[,component] <-update.epsilon(epsilon[,component]^2, acc, p_accept, j, sum(idx), alphaStar)
+          epsilon[,component] <-update_epsilon(epsilon[,component]^2, acc, p_accept, j, sum(idx), alphaStar)
         }
         if(any(grouped)){
           acc <-  pmwgs$samples$grouped_pars[1,j] !=  pmwgs$samples$grouped_pars[1,(j-1)]
-          epsilon_grouped <-update.epsilon(epsilon_grouped^2, acc, mean(p_accept), j, sum(grouped), mean(alphaStar))
+          epsilon_grouped <-update_epsilon(epsilon_grouped^2, acc, mean(p_accept), j, sum(grouped), mean(alphaStar))
         }
       }
     }
@@ -483,7 +483,7 @@ bind_alpha <- function(proposals, alpha, num_particles, is_grouped, par_names){
 # Utility functions for sampling below ------------------------------------
 
 
-update.epsilon<- function(epsilon2, acc, p, i, d, alpha) {
+update_epsilon<- function(epsilon2, acc, p, i, d, alpha) {
   c <- ((1-1/d)*sqrt(2*pi)*exp(alpha^2/2)/(2*alpha) + 1/(d*p*(1-p)))
   Theta <- log(sqrt(epsilon2))
   Theta <- Theta+c*(acc-p)/max(200, i/d)
