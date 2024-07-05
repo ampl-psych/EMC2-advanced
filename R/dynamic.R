@@ -487,7 +487,7 @@ get_dynamic <- function(pname,p,data,design,return_dadm=FALSE,return_p=FALSE,com
 #' kernel for trend models
 #'
 #' @param pname parameter to provide results for
-#' @param p parameter vector
+#' @param p_vector parameter vector
 #' @param data data frame providing covariate(s)
 #' @param design design with dynamic RL component
 #' @param return_dadm return full dadm (accumulators) otherwise just trials
@@ -574,7 +574,7 @@ dynamic_rfun <- function(dynamic_cv,p_vector,dadm,design)
   ndadadm <- dadm # no dynamic or adaptive, use in Ttransform
   attr(ndadadm,"dynamic") <- NULL
   attr(ndadadm,"adaptive") <- NULL
-  pars <- map_p(model()$transform(add_constants(p_vector,design$constants)), dadm)
+  pars <- map_p(design$model()$transform(add_constants(p_vector,design$constants)), dadm)
   if (!is.null(design$dynamic)) {
     # Now make dynamic pars
     p_vector <- add_constants(p_vector,design$constants)
@@ -656,7 +656,7 @@ dynamic_rfun <- function(dynamic_cv,p_vector,dadm,design)
   # Make container for simulated data and fill in first line
   data <- dadm[dadm$lR==levels(dadm$lR)[1],]
   acci <- 1:nacc
-  pars[acci,] <- model()$Ttransform(model()$Ntransform(
+  pars[acci,] <- design$model()$Ttransform(design$model()$Ntransform(
     pars[acci,,drop=FALSE],attr(design, "transform_names")),ndadadm)
   if (!is.null(design$adaptive)) {
     for (p in names(adaptive)) {
@@ -721,7 +721,7 @@ dynamic_rfun <- function(dynamic_cv,p_vector,dadm,design)
       }
     }
     # Having done all dynamic and adaptive, so updates simulate data
-    pars[j,] <- model()$Ttransform(model()$Ntransform(
+    pars[j,] <- design$model()$Ttransform(design$model()$Ntransform(
       pars[j,,drop=FALSE],attr(design, "transform_names")),ndadadm)
     if (!all(design$model()$rfun(NULL,pars[j,,drop=FALSE])))
       stop("Parameter generation for ",p," not ok: ",pars[j,p])

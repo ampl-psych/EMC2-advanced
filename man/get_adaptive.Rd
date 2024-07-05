@@ -17,6 +17,8 @@ get_adaptive(
 \arguments{
 \item{pname}{parameter to provide results for}
 
+\item{p_vector}{parameter vector}
+
 \item{data}{data frame providing covariate(s)}
 
 \item{design}{design with dynamic RL component}
@@ -26,8 +28,6 @@ get_adaptive(
 \item{return_p}{return dynamic parameter, default FALSE, return non-linear}
 
 \item{compress}{compress dadm? Default FALSE appropriate for RL models}
-
-\item{p}{parameter vector}
 }
 \value{
 dadm/data q values, prediction errors etc. (etc. depends on RL model dyntype)
