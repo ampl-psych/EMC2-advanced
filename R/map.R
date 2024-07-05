@@ -140,22 +140,21 @@ add_constants_mcmc <- function(p,constants){
 #' mapped_par(p_vector,design_DDMaE)
 #'
 #' @export
-
 mapped_par <- function(p_vector,design,model=NULL,
                        digits=3,remove_subjects=TRUE, ...)
   # Show augmented data and corresponding mapped parameter
 {
   remove_RACE <- TRUE
+  covariates <- NULL
   optionals <- list(...)
   for (name in names(optionals) ) {
     assign(name, optionals[[name]])
   }
-  Fcovariates <- design$Fcovariates
   if (is.null(model)) if (is.null(design$model))
     stop("Must specify model as not in design") else model <- design$model
     if (remove_subjects) design$Ffactors$subjects <- design$Ffactors$subjects[1]
     if (!is.matrix(p_vector)) p_vector <- make_pmat(p_vector,design)
-    dadm <- design_model(make_data(p_vector,design,n_trials=1,Fcovariates=Fcovariates),
+    dadm <- design_model(make_data(p_vector,design,n_trials=1,Fcovariates=covariates),
                          design,model,rt_check=FALSE,compress=FALSE)
     ok <- !(names(dadm) %in% c("subjects","trials","R","rt","winner"))
     if (!is.null(attr(dadm,"advantage"))) {
@@ -167,14 +166,13 @@ mapped_par <- function(p_vector,design,model=NULL,
     } else adadm <- dadm
     pars <- get_pars(p_vector,dadm)
     out <- cbind(adadm[,ok],round(pars[,!dimnames(pars)[[2]]=="SSD"],digits))
-    out <- out[,!(names(out) %in% c("inhibit","staircase"))]  # stop signal models
+    out <- out[,!(names(out) %in% c("lI","staircase"))]  # stop signal models
     if (model()$type=="SDT")  out <- out[adadm$lR!=levels(adadm$lR)[length(levels(dadm$lR))],]
     if (model()$type=="DDM")  out <- out[,!(names(out) %in% c("lR","lM"))]
     if (any(names(out)=="RACE") && remove_RACE)
       out <- out[as.numeric(out$lR) <= as.numeric(as.character(out$RACE)),,drop=FALSE]
     return(out)
 }
-
 
 # mcmc=mcmcList[[1]]; design=attr(samplers,"design_list")[[1]];model=attr(samplers,"model_list")[[1]]
 map_mcmc <- function(mcmc,design,model, include_constants = TRUE)
