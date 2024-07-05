@@ -29,13 +29,17 @@ make_missing(
 
 \item{UC}{upper censoring bound (scalar or subject named vector)}
 
-\item{LCresponse}{Boolean, default TRUE, if false set LC response to NA}
+\item{LCresponse}{logical, default TRUE, if false set LC response to NA}
 
-\item{UCresponse}{Boolean, default TRUE, if false set UC response to NA}
+\item{UCresponse}{logical, default TRUE, if false set UC response to NA}
 
-\item{LCdirection}{Boolean, default TRUE, set LC rt to 0, else to NA}
+\item{LCdirection}{logical, default TRUE, set LC rt to 0, else to NA}
 
-\item{UCdirection}{Boolean, default TRUE, set LC rt to Inf, else to NA}
+\item{UCdirection}{logical, default TRUE, set LC rt to Inf, else to NA}
+
+\item{pc}{probability of contamination}
+
+\item{verbose}{logical, default TRUE, report propotion of data truncated.}
 }
 \value{
 Truncated and censored data frame

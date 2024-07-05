@@ -65,6 +65,7 @@
 #' @importFrom stats update
 #' @importFrom stats var
 #' @importFrom stats varimax
+#' @importFrom tmvtnorm rtmvnorm
 #' @importFrom utils combn
 #' @useDynLib EMC2, .registration = TRUE
 ## usethis namespace: end
