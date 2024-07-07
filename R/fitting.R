@@ -63,6 +63,7 @@
 #' updated in blocks. This can be helpful in extremely tough models with a large number of parameters.
 #' @param stop_criteria A list. Defines the stopping criteria and for which types
 #' of parameters these should hold. See the details and examples section.
+#' @param report_time Logical: report run time.
 #'
 #' @return A list of samplers
 #' @examples \dontrun{
@@ -101,8 +102,11 @@
 
 run_emc <- function(samplers, stage = NULL, iter = 1000, stop_criteria = NULL,
                     p_accept = .8, step_size = 100, verbose = TRUE, verboseProgress = FALSE, fileName = NULL,
-                    particles = NULL, particle_factor=50, cores_per_chain = 1,
+                    particles = NULL, particle_factor=50, cores_per_chain = 1,report_time=TRUE,
                     cores_for_chains = length(samplers), max_tries = 20, n_blocks = 1){
+
+  if (report_time) start_time <- Sys.time()
+
   if(!is.null(stop_criteria) & length(stop_criteria) == 1){
     stop_criteria[["sample"]] <- stop_criteria
   }
@@ -165,6 +169,7 @@ run_emc <- function(samplers, stage = NULL, iter = 1000, stop_criteria = NULL,
                               particles = particles, particle_factor = particle_factor,
                               cores_per_chain = cores_per_chain, max_tries = max_tries, n_blocks = n_blocks)
   }
+  if (report_time) print(Sys.time()-start_time)
   return(samplers)
 }
 
