@@ -17,6 +17,7 @@ run_emc(
   particles = NULL,
   particle_factor = 50,
   cores_per_chain = 1,
+  report_time = TRUE,
   cores_for_chains = length(samplers),
   max_tries = 20,
   n_blocks = 1
@@ -56,6 +57,8 @@ root of the number of sampled parameters determines the number of particles used
 \item{cores_per_chain}{An integer. How many cores to use per chain. Parallelizes across
 participant calculations. Only available on Linux or Mac OS. For Windows, only
 parallelization across chains (\code{cores_for_chains}) is available.}
+
+\item{report_time}{Logical: report run time.}
 
 \item{cores_for_chains}{An integer. How many cores to use across chains.
 Defaults to the number of chains. The total number of cores used is equal to \code{cores_per_chain} * \code{cores_for_chains}.}
