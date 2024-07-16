@@ -77,8 +77,8 @@ rLNR <- function(lR,pars,p_types=c("m","s","t0"),ok=rep(TRUE,dim(pars)[1])){
 #' matchfun=function(d)d$S==d$lR
 #' # We now construct our design, with v ~ lM and the contrast for lM the ADmat.
 #' design_LNRmE <- design(data = forstmann,model=LNR,matchfun=matchfun,
-#'                        formula=list(m~lM + E,s~1,t0~1),
-#'                        contrasts=list(m=list(lM=ADmat)))
+#' formula=list(m~lM + E,s~1,t0~1),
+#' contrasts=list(m=list(lM=ADmat)))
 #' # For all parameters that are not defined in the formula, default values are assumed
 #' # (see Table above).
 #' @export
@@ -90,9 +90,13 @@ LNR <- function() {
     type="RACE",
     c_name = "LNR",
     p_types=c("m" = 1,"s" = log(1),"t0" = log(0)),
-    Ntransform=function(x) {
-      # Transform to natural scale
-      x[,dimnames(x)[[2]] != "m"] <- exp(x[,dimnames(x)[[2]] != "m"])
+    Ntransform=function(x,use=NULL) {
+      if (is.null(use)) {
+        x[,dimnames(x)[[2]] != "m"] <- exp(x[,dimnames(x)[[2]] != "m"])
+      } else if (!all(use=="m")) {
+        ok <- use[use != "m"]
+        x[,ok] <- exp(x[,ok])
+      }
       x
     },
     # p_vector transform scaling parameter by s=1 assumed in lnr.R

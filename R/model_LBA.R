@@ -219,8 +219,8 @@ rLBA <- function(lR,pars,p_types=c("v","sv","b","A","t0"),posdrift = TRUE,
 #' matchfun=function(d)d$S==d$lR
 #' # We now construct our design, with v ~ lM and the contrast for lM the ADmat.
 #' design_LBABE <- design(data = forstmann,model=LBA,matchfun=matchfun,
-#'                        formula=list(v~lM,sv~lM,B~E+lR,A~1,t0~1),
-#'                        contrasts=list(v=list(lM=ADmat)),constants=c(sv=log(1)))
+#' formula=list(v~lM,sv~lM,B~E+lR,A~1,t0~1),
+#' contrasts=list(v=list(lM=ADmat)),constants=c(sv=log(1)))
 #' # For all parameters that are not defined in the formula, default values are assumed
 #' # (see Table above).
 #' @export
@@ -234,8 +234,13 @@ LBA <- function(){
     p_types=c("v" = 1,"sv" = log(1),"B" = log(1),"A" = log(0),"t0" = log(0)),
     transform = function(p) p,
     # Transform to natural scale
-    Ntransform=function(x) {
-      x[,dimnames(x)[[2]] != "v"] <- exp(x[,dimnames(x)[[2]] != "v"])
+    Ntransform=function(x,use=NULL) {
+      if (is.null(use)) {
+        x[,dimnames(x)[[2]] != "v"] <- exp(x[,dimnames(x)[[2]] != "v"])
+      } else if (!all(use=="v")) {
+        ok <- use[use != "v"]
+        x[,ok] <- exp(x[,ok])
+      }
       x
     },
     # Trial dependent parameter transform

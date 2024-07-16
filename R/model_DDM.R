@@ -11,8 +11,8 @@ rDDM <- function(lR,pars,precision=2.5,ok=rep(TRUE,length(lR)))
   bad <- rep(NA,length(lR))
   out <- data.frame(response=bad,rt=bad)
   out[ok,2:1] <- rtdists::rdiffusion(length(lR[ok]), a = pars[ok,"a"], v = pars[ok,"v"], t0 = pars[ok,"t0"],
-                            z = pars[ok,"z"], d = pars[ok,"d"], sz = pars[ok,"sz"], sv = pars[ok,"sv"],
-                            st0 = pars[ok,"st0"], s = pars[ok,"s"])
+                                     z = pars[ok,"z"], d = pars[ok,"d"], sz = pars[ok,"sz"], sv = pars[ok,"sv"],
+                                     st0 = pars[ok,"st0"], s = pars[ok,"s"])
   # cbind.data.frame(R=factor(out[,"response"],levels=c("lower","upper"),labels=levels(lR)),rt=out[,"rt"])
   cbind.data.frame(R=factor(out[,"response"],levels=1:2,labels=levels(lR)),rt=out[,"rt"])
 }
@@ -28,8 +28,8 @@ dDDM <- function(rt,R,pars,precision=2.5)
 {
   levels(R) <- c("lower","upper")
   rtdists::ddiffusion(rt,response=as.character(R),
-             a = pars[,"a"], v = pars[,"v"], t0 = pars[,"t0"], z = pars[,"z"],d = pars[,"d"],
-             sz = pars[,"sz"], sv = pars[,"sv"],st0 = pars[,"st0"], s = pars[,"s"])
+                      a = pars[,"a"], v = pars[,"v"], t0 = pars[,"t0"], z = pars[,"z"],d = pars[,"d"],
+                      sz = pars[,"sz"], sv = pars[,"sv"],st0 = pars[,"st0"], s = pars[,"s"])
 }
 
 pDDM <- function(rt,R,pars,precision=2.5)
@@ -38,8 +38,8 @@ pDDM <- function(rt,R,pars,precision=2.5)
 {
   levels(R) <- c("lower","upper")
   rtdists::pdiffusion(rt,response=as.character(R),
-             a = pars[,"a"], v = pars[,"v"], t0 = pars[,"t0"], z = pars[,"z"],d = pars[,"d"],
-             sz = pars[,"sz"], sv = pars[,"sv"],st0 = pars[,"st0"], s = pars[,"s"])
+                      a = pars[,"a"], v = pars[,"v"], t0 = pars[,"t0"], z = pars[,"z"],d = pars[,"d"],
+                      sz = pars[,"sz"], sv = pars[,"sv"],st0 = pars[,"st0"], s = pars[,"s"])
 }
 
 
@@ -109,11 +109,17 @@ DDM <- function(){
     #   0 < DP < 1: rtdists d = t0(upper)-t0(lower) = (2*DP-1)*t0  #
     #
     # Transform to natural scale
-    Ntransform=function(x) {
-      islog <- dimnames(x)[[2]] %in% c("a","sv","t0","st0","s")
-      isprobit <- dimnames(x)[[2]] %in% c("Z","SZ","DP")
-      x[,islog] <- exp(x[,islog])
-      x[,isprobit] <- pnorm(x[,isprobit])
+    Ntransform=function(x,use=NULL) {
+      lognames <- c("a","sv","t0","st0","s")
+      probitnames <- c("Z","SZ","DP")
+      if (!is.null(use)) {
+        lognames <- lognames[lognames %in% use]
+        probitnames <- probitnames[lognames %in% use]
+      }
+      islog <- dimnames(x)[[2]] %in% lognames
+      isprobit <- dimnames(x)[[2]] %in% probitnames
+      if (any(islog)) x[,islog] <- exp(x[,islog])
+      if (any(isprobit)) x[,isprobit] <- pnorm(x[,isprobit])
       x
     },
     # Trial dependent parameter transform
@@ -177,7 +183,7 @@ DDMt0natural <- function(){
       pars <- cbind(pars, d = pars[,"t0"]*(2*pars[,"DP"]-1))
       attr(pars,"ok") <-
         !( abs(pars[,"v"])> 20 | pars[,"a"]> 10 | pars[,"sv"]> 10 | pars[,"SZ"]> .999 |
-           pars[,"t0"] < .05 | pars[,"st0"]>.2)
+             pars[,"t0"] < .05 | pars[,"st0"]>.2)
       if (pars[1,"sv"] !=0) attr(pars,"ok") <- attr(pars,"ok") & pars[,"sv"] > .001
       if (pars[1,"SZ"] !=0) attr(pars,"ok") <- attr(pars,"ok") & pars[,"SZ"] > .001
       pars
