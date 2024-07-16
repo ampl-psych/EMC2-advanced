@@ -158,6 +158,8 @@ rLBA <- function(lR,pars,p_types=c("v","sv","b","A","t0"),posdrift = TRUE,
   out$rt[ok] <- rt
   out
 }
+
+
 #### Model functions ----
 
 #' The Linear Ballistic Accumulator model

@@ -63,8 +63,8 @@ ADmat <- matrix(c(-1/2,1/2),ncol=1,dimnames=list(NULL,"d"))
 matchfun=function(d)d$S==d$lR
 # We now construct our design, with v ~ lM and the contrast for lM the ADmat.
 design_LBABE <- design(data = forstmann,model=LBA,matchfun=matchfun,
-                       formula=list(v~lM,sv~lM,B~E+lR,A~1,t0~1),
-                       contrasts=list(v=list(lM=ADmat)),constants=c(sv=log(1)))
+formula=list(v~lM,sv~lM,B~E+lR,A~1,t0~1),
+contrasts=list(v=list(lM=ADmat)),constants=c(sv=log(1)))
 # For all parameters that are not defined in the formula, default values are assumed
 # (see Table above).
 }

@@ -187,58 +187,6 @@ ALBA <- function(){
   )
 }
 
-#' #' Advantage LBA Model with no C, 3 parameter shape mapping
-#' #'
-#' #' f <- function(x, a, b, p) {(pbeta(x, a, b)*p + qbeta(x, a, b)*(1 - p))}
-#' #' a = S1, b = S1 + SD, both log scale, p = SW, 0<p<1 probit scale
-#' #'
-#' #' @return A list defining the cognitive model
-#' #' @export
-#' AiLBAnoC <- function(){
-#'   list(
-#'     type="RACE",
-#'     # p_vector transform, sets sv as a scaling parameter
-#'     p_types=c("v" = 0,"sv" = log(1),"B" = log(1),"A" = log(0),"t0" = log(0),
-#'               "AD"=log(1),"AS"=log(0),S1=log(1),SD=log(1),SW=qnorm(.5)),
-#'     transform = function(p) p,
-#'     # Transform to natural scale
-#'     Ntransform=function(x,use=NULL) {
-#'       if (is.null(use)) {
-#'         use <- !(names(x) %in% c("v","S1","SD","SW"))
-#'         x[,use] <- exp(x[,use])
-#'       } else if (!all(use=="v")) {
-#'         ok <- use[!(use %in% c("v","S1","SD","SW"))]
-#'         x[,ok] <- exp(x[,ok])
-#'       }
-#'       x
-#'     },
-#'     # Trial dependent parameter transform
-#'     Ttransform = function(pars,dadm) {
-#'       pars <- cbind(pars,b=pars[,"B"] + pars[,"A"])
-#'       if (!is.null(attr(dadm,"adaptive"))) pars <- do_adaptive(pars,dadm)
-#'       pars <- advantage_pars(pars,dadm[attr(dadm,"advantage")[[1]]],
-#'         length(levels(dadm$lR)),names(attr(dadm,"advantage"))[1],inv=TRUE)
-#'       attr(pars,"ok") <- (pars[,"sv"] > 0) & (pars[,"B"] >= 0) &
-#'         (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0)
-#'       pars
-#'     },
-#'     # Random function for racing accumulator
-#'     rfun=function(lR=NULL,pars) {
-#'       ok <- (pars[,"sv"] > 0) & (pars[,"B"] >= 0) &
-#'         (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0)
-#'       if (is.null(lR)) ok else rALBA(lR,pars,posdrift=TRUE,ok=ok)
-#'     },
-#'     # Density function (PDF) for single accumulator
-#'     dfun=function(rt,pars) dLBA(rt,pars,posdrift = TRUE, robust = FALSE),
-#'     # Probability function (CDF) for single accumulator
-#'     pfun=function(rt,pars) pLBA(rt,pars,posdrift = TRUE, robust = FALSE),
-#'     # Race likelihood combining pfun and dfun
-#'     log_likelihood=function(p_vector,dadm,min_ll=log(1e-10)){
-#'       log_likelihood_race_advantage(p_vector=p_vector, dadm = dadm, min_ll = min_ll)
-#'     }
-#'   )
-#' }
-
 
 #### Multiple threshold models ----
 
@@ -483,7 +431,11 @@ BE2lbaB <- function(){
     rfun=function(lR=NULL,pars) {
       ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0) &
         ( pars[,"v"] > 0 & pars[,"v"] < 10 ) & ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0) & (abs(pars[,"b"])<10)
-      if (is.null(lR)) ok else rLBA_BE(pars,ok=ok)
+      if (is.null(lR)){
+        return(ok)
+      } else{
+        return(rLBA_BE(pars,ok=ok))
+      }
     },
     # Density function (PDF) for single accumulator
     dfun=function(rt,pars) dLBA(rt,pars,posdrift = TRUE, robust = FALSE),

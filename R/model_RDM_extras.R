@@ -182,56 +182,7 @@ ARDMnoC <- function(){
   )
 }
 
-#' #' Advantage Racing Diffusion Model with no C, 3 parameter shape mapping
-#' #'
-#' #' f <- function(x, a, b, p) {(pbeta(x, a, b)*p + qbeta(x, a, b)*(1 - p))}
-#' #' a = S1, b = S1 + SD, both log scale, p = SW, 0<p<1 probit scale
-#' #'
-#' #' @return A list defining the cognitive model
-#' #' @export
-#' AiRDMnoC <- function(){
-#'   list(
-#'     type="RACE",
-#'     p_types=c("v" = log(1),"B" = log(1),"A" = log(0),"t0" = log(0),"s" = log(1),
-#'               "AD"=log(1),"AS"=log(0),S1=log(1),SD=log(1),SW=qnorm(.5)),
-#'     # Transform to natural scale
-#'     Ntransform=function(x,use=NULL) {
-#'       # transform parameters back to real line
-#'       if (is.null(use)) {
-#'         use <- !(names(x) %in% c("S1","SS","SW"))
-#'         x[,use] <- exp(x[,use])
-#'       } else {
-#'         ok <- use[!(use %in% c("v","S1","SD","SW"))]
-#'         x[,ok] <- exp(x[,ok])
-#'       }
-#'       x
-#'     },
-#'     # p_vector transform
-#'     transform = function(x) x,
-#'     # Trial dependent parameter transform
-#'     Ttransform = function(pars,dadm) {
-#'       if (!is.null(attr(dadm,"adaptive"))) pars <- do_adaptive(pars,dadm)
-#'       pars <- advantage_pars(pars,dadm[attr(dadm,"advantage")[[1]]],
-#'         length(levels(dadm$lR)),names(attr(dadm,"advantage"))[1],inv=TRUE)
-#'       attr(pars,"ok") <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0) &
-#'         ((pars[,"v"] > 1e-3) | pars[,"v"] == 0) &  (pars[,"B"] >= 0) &  (pars[,"s"] > 0)
-#'       pars
-#'     },
-#'     # Random function for racing accumulators
-#'     rfun=function(lR=NULL,pars) {
-#'       ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0) &
-#'         ((pars[,"v"] > 1e-3) | pars[,"v"] == 0) &  (pars[,"B"] >= 0) &  (pars[,"s"] > 0)
-#'       if (is.null(lR)) ok else rARDM(lR,pars,ok=ok)
-#'     },
-#'     # Density function (PDF) for single accumulator
-#'     dfun=function(rt,pars) dRDM(rt,pars),
-#'     # Probability function (CDF) for single accumulator
-#'     pfun=function(rt,pars) pRDM(rt,pars),
-#'     # Race likelihood combining pfun and dfun
-#'     log_likelihood=function(p_vector,dadm,min_ll=log(1e-10))
-#'       log_likelihood_race_advantage(p_vector=p_vector, dadm = dadm, min_ll = min_ll)
-#'   )
-#' }
+
 
 #### Missing ----
 
