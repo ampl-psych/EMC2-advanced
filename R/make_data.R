@@ -102,7 +102,7 @@ make_missing <- function(data,LT=0,UT=Inf,LC=0,UC=Inf,
 #' @export
 
 make_data <- function(parameters,design = NULL,n_trials=NULL,data=NULL,expand=1,
-  mapped_p=FALSE, hyper = FALSE, ...)
+                      mapped_p=FALSE, hyper = FALSE, ...)
 {
   # #' @param LT lower truncation bound below which data are removed (scalar or subject named vector)
   # #' @param UT upper truncation bound above which data are removed (scalar or subject named vector)
@@ -136,6 +136,8 @@ make_data <- function(parameters,design = NULL,n_trials=NULL,data=NULL,expand=1,
   return_Ffunctions <- FALSE
   Fcovariates=NULL
   optionals <- list(...)
+  dynamic_cv <- NULL
+  remap <- NULL
   for (name in names(optionals) ) {
     assign(name, optionals[[name]])
   }
@@ -166,17 +168,22 @@ make_data <- function(parameters,design = NULL,n_trials=NULL,data=NULL,expand=1,
     if(is.null(rownames(parameters))) rownames(parameters) <- design$Ffactors$subjects
   }
   model <- design$model
-  if (!is.matrix(parameters)) parameters <- make_pmat(parameters,design)
+
+
+  p_vector <- parameters
+  model <- design$model
+  if (!is.matrix(p_vector)) p_vector <- make_pmat(p_vector,design)
   if ( is.null(data) ) {
-    design$Ffactors$subjects <- rownames(parameters)
+    design$Ffactors$subjects <- rownames(p_vector)
     if (mapped_p) n_trials <- 1
     if ( is.null(n_trials) )
       stop("If data is not provided need to specify number of trials")
     Ffactors=c(design$Ffactors,list(trials=1:n_trials))
     data <- as.data.frame.table(array(dim=unlist(lapply(Ffactors,length)),
-                                        dimnames=Ffactors))
-    for (i in names(design$Ffactors))
+                                      dimnames=Ffactors))
+    for (i in names(design$Ffactors)){
       data[[i]] <- factor(data[[i]],levels=design$Ffactors[[i]])
+    }
     names(data)[dim(data)[2]] <- "R"
     data$R <- factor(data$R,levels=design$Rlevels)
     data$trials <- as.numeric(as.character(data$trials))
@@ -199,34 +206,10 @@ make_data <- function(parameters,design = NULL,n_trials=NULL,data=NULL,expand=1,
       empty_covariates <- names(design$Fcovariates)[!(names(design$Fcovariates) %in% names(data))]
       if (length(empty_covariates)>0) data[,empty_covariates] <- 0
     }
-  } else {
-    LT <- attr(data,"LT"); if (is.null(LT)) LT <- 0
-    UT <- attr(data,"UT"); if (is.null(UT)) UT <- Inf
-    LC <- attr(data,"LC"); if (is.null(LC)) LC <- 0
-    UC <- attr(data,"UC"); if (is.null(UC)) UC <- Inf
-    if (!force_direction) {
-      ok <- data$rt==-Inf; ok[is.na(ok)] <- FALSE
-      LCdirection <- any(ok)
-      ok <- data$rt==Inf; ok[is.na(ok)] <- FALSE
-      UCdirection=any(ok)
-    }
-    if (!force_response) {
-      if (!any(is.infinite(data$rt)) & any(is.na(data$R))) {
-        LCresponse <- UCresponse <- FALSE
-      } else {
-        ok <- data$rt==-Inf
-        bad <- is.na(ok)
-        LCresponse <- !any(ok[!bad] & is.na(data$R[!bad]))
-        ok <- data$rt==Inf
-        bad <- is.na(ok)
-        UCresponse <- !any(ok[!bad] & is.na(data$R[!bad]))
-      }
-    }
-    data <- add_trials(data[order(data$subjects),])
   }
   if (!is.factor(data$subjects)) data$subjects <- factor(data$subjects)
   if (!is.null(model)) {
-    if (!is.function(model)) stop("model argument must  be a function")
+    if (!is.function(model)) stop("model arguement must  be a function")
     if ( is.null(model()$p_types) ) stop("model()$p_types must be specified")
     if ( is.null(model()$transform) ) stop("model()$transform must be specified")
     if ( is.null(model()$Ntransform) ) stop("model()$Ntransform must be specified")
@@ -237,25 +220,17 @@ make_data <- function(parameters,design = NULL,n_trials=NULL,data=NULL,expand=1,
     design,model,add_acc=FALSE,compress=FALSE,verbose=FALSE,
     rt_check=FALSE)
   if (!is.null(attr(design,"ordinal")))
-    parameters[,attr(design,"ordinal")] <- exp(parameters[,attr(design,"ordinal")])
+    p_vector[,attr(design,"ordinal")] <- exp(p_vector[,attr(design,"ordinal")])
   pars <- model()$Ttransform(model()$Ntransform(map_p(
-    model()$transform(add_constants(parameters,design$constants)),data
-  )),data)
+    model()$transform(add_constants(p_vector,design$constants)),data
+  ),attr(design,"transform_names")),data)
+
+  # if (!is.null(attr(data,"isRL"))) data <- data[,!(names(data) %in% attr(data,"isRL"))]
+
   if ( any(dimnames(pars)[[2]]=="pContaminant") && any(pars[,"pContaminant"]>0) )
     pc <- pars[data$lR==levels(data$lR)[1],"pContaminant"] else pc <- NULL
-  if (!is.null(design$adapt)) {
-    if (expand>1) {
-      expand <- 1
-      warning("Expand does not work with this type of model")
-    }
-    # data <- adapt_data(data,design,model,pars,mapped_p=mapped_p,add_response = TRUE)
-    if (mapped_p) return(data)
-    adapt <- attr(data,"adapt")
-    data <- data[data$lR==levels(data$lR)[1],!(names(data) %in% c("lR","lM"))]
-    if('Qvalues' %in% names(attributes(pars))) attr(data, 'Qvalues') <- attr(pars, 'Qvalues')
-    if('predictionErrors' %in% names(attributes(pars))) attr(data, 'predictionErrors') <- attr(pars, 'predictionErrors')
-    attr(data,"adapt") <- adapt
-    return(data)
+  if ((!is.null(design$adaptive) | !is.null(design$dynamic)) & expand>1) {
+    warning("Expand may not work properly with some adaptive and dynamic models")
   }
   if (mapped_p) return(cbind(data[,!(names(data) %in% c("R","rt"))],pars))
   if (expand>1) {
@@ -265,6 +240,7 @@ make_data <- function(parameters,design = NULL,n_trials=NULL,data=NULL,expand=1,
     pars <- apply(pars,2,rep,times=expand)
   } else lR <- data$lR
   if (any(names(data)=="RACE")) {
+    if (!is.null(dynamic_cv)) stop("RACE data not yet supported with dynamic_cv")
     Rrt <- matrix(ncol=2,nrow=dim(data)[1]/length(levels(data$lR)),
                   dimnames=list(NULL,c("R","rt")))
     RACE <- data[data$lR==levels(data$lR)[1],"RACE"]
@@ -277,31 +253,41 @@ make_data <- function(parameters,design = NULL,n_trials=NULL,data=NULL,expand=1,
       Rrt[RACE==i,] <- as.matrix(Rrti)
     }
     Rrt <- data.frame(Rrt)
-    Rrt$R <- factor(Rrt$R,labels=levels(lR))
-  } else Rrt <- model()$rfun(lR,pars)
-  dropNames <- c("lR","lM","lSmagnitude")
+    Rrt$R <- factor(Rrt$R,labels=levels(lR),levels=1:length(levels(lR)))
+  } else {
+    if (!is.null(dynamic_cv)) {
+      Rrt <- dynamic_rfun(dynamic_cv,p_vector,data,design)
+    } else Rrt <- model()$rfun(lR,pars)
+  }
+
+  dropNames <- c("lR","lM","lSmagnitude",attr(data, "isRL"))
+
   if (!return_Ffunctions && !is.null(design$Ffunctions))
     dropNames <- c(dropNames,names(design$Ffunctions) )
   data <- data[data$lR==levels(data$lR)[1],!(names(data) %in% dropNames)]
   for (i in dimnames(Rrt)[[2]]) data[[i]] <- Rrt[,i]
-  data <- make_missing(data[,names(data)!="winner"],LT,UT,LC,UC,
-    LCresponse,UCresponse,LCdirection,UCdirection)
+  if (!all(is.na(data$rt))) data <- make_missing(data[,names(data)!="winner"],LT,UT,LC,UC,
+                                                 LCresponse,UCresponse,LCdirection,UCdirection,pc)
   if ( !is.null(pc) ) {
+    pc <- attr(data,"pc")
+    attr(data,"pc") <- NULL
     if (!any(is.infinite(data$rt)) & any(is.na(data$R)))
       stop("Cannot have contamination and censoring with no direction and response")
     contam <- runif(length(pc)) < pc
     data[contam,"R"] <- NA
-    if ( LC!=0 | is.finite(UC) ) { # censoring
+    if ( any(LC!=0) | any(is.finite(UC)) ) { # censoring
       if ( (LCdirection & UCdirection) &  !rtContaminantNA)
         stop("Cannot have contamination with a mixture of censor directions")
-      if (rtContaminantNA & ((is.finite(LC) & !LCresponse & !LCdirection) |
-                              (is.finite(UC) & !UCresponse & !UCdirection)))
+      if (rtContaminantNA & ((any(is.finite(LC)) & !LCresponse & !LCdirection) |
+                             (any(is.finite(UC)) & !UCresponse & !UCdirection)))
         stop("Cannot have contamination and censoring with no direction and response")
       if (rtContaminantNA | (!LCdirection & !UCdirection)) data[contam,"rt"] <- NA else
         if (LCdirection) data[contam,"rt"] <- -Inf  else data[contam,"rt"] <- Inf
     } else data[contam,"rt"] <- NA
   }
-  attr(data,"p_vector") <- parameters;
+  attr(data,"p_vector") <- p_vector
+  if (!is.null(Rrt) && !is.null(attr(Rrt,"timer_wins")))
+    attr(data,"timer_wins") <-  attr(Rrt,"timer_wins")
   data
 }
 
