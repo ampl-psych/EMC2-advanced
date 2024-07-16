@@ -94,7 +94,7 @@ NumericMatrix c_map_p(NumericVector p_vector, CharacterVector p_types, List desi
   return(pars);
 }
 
-NumericMatrix get_pars(NumericVector p_vector, NumericVector constants,
+NumericMatrix get_pars_matrix(NumericVector p_vector, NumericVector constants,
                        NumericVector (*transform)(NumericVector),
                        NumericMatrix (*Ntransform)(NumericMatrix, CharacterVector, DataFrame, List),
                        CharacterVector p_types, List designs, int n_trials,
@@ -260,7 +260,7 @@ double c_log_likelihood_race_trdm(NumericMatrix pars, DataFrame data,
 // # Race model summed log likelihood
 // {
 //
-//   pars <- get_pars(p_vector,dadm)
+//   pars <- get_pars_matrix(p_vector,dadm)
 //
 //   if (is.null(attr(pars,"ok")))
 //     ok <- !logical(dim(pars)[1]) else ok <- attr(pars,"ok")
@@ -405,14 +405,14 @@ NumericVector calc_ll(NumericMatrix p_matrix, DataFrame data, NumericVector cons
   if(type == "DDM"){
     for(int i = 0; i < n_particles; i++){
       p_vector = p_matrix(i, _);
-      pars = get_pars(p_vector, constants, transform_DDM, Ntransform_DDM, p_types, designs, n_trials, dynamic, data);
+      pars = get_pars_matrix(p_vector, constants, transform_DDM, Ntransform_DDM, p_types, designs, n_trials, dynamic, data);
       lls[i] = c_log_likelihood_DDM(pars, data, n_trials, expand, min_ll, group_idx);
     }
   } else if(type == "TRDM"){
     LogicalVector winner = data["winner"];
     for(int i = 0; i < n_particles; i++){
       p_vector = p_matrix(i, _);
-      pars = get_pars(p_vector, constants, transform_trdm, Ntransform_trdm, p_types, designs, n_trials, dynamic, data);
+      pars = get_pars_matrix(p_vector, constants, transform_trdm, Ntransform_trdm, p_types, designs, n_trials, dynamic, data);
       lls[i] = c_log_likelihood_race_trdm(pars, data,n_trials, winner, expand, min_ll);
     }
   } else{
@@ -442,13 +442,13 @@ NumericVector calc_ll(NumericMatrix p_matrix, DataFrame data, NumericVector cons
     if(type == "RDM" || type == "LBA" || type == "LNR"){
       for(int i = 0; i < n_particles; i++){
         p_vector = p_matrix(i, _);
-        pars = get_pars(p_vector, constants, transform, Ntransform, p_types, designs, n_trials, dynamic, data);
+        pars = get_pars_matrix(p_vector, constants, transform, Ntransform, p_types, designs, n_trials, dynamic, data);
         lls[i] = c_log_likelihood_race(pars, data, dfun, pfun, n_trials, winner, expand, min_ll);
       }
     } else{ // apparently we're a Advantage model and not a standard model
       for(int i = 0; i < n_particles; i++){
         p_vector = p_matrix(i, _);
-        pars = get_pars(p_vector, constants, transform, Ntransform, p_types, designs, n_trials, dynamic, data);
+        pars = get_pars_matrix(p_vector, constants, transform, Ntransform, p_types, designs, n_trials, dynamic, data);
         lls[i] = c_log_likelihood_race_advantage(pars, data, dfun, pfun, n_trials, winner, expand, min_ll);
       }
     }
