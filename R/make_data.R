@@ -13,9 +13,11 @@
 #' @param UCdirection Boolean, default TRUE, set LC rt to Inf, else to NA
 #'
 #' @return Truncated and censored data frame
+#' @export
 
 make_missing <- function(data,LT=0,UT=Inf,LC=0,UC=Inf,
-    LCresponse=TRUE,UCresponse=TRUE,LCdirection=TRUE,UCdirection=TRUE)
+                         LCresponse=TRUE,UCresponse=TRUE,LCdirection=TRUE,UCdirection=TRUE,pc=NULL,
+                         verbose=TRUE)
 {
 
   censor <- function(data,L=0,U=Inf,Ld=TRUE,Ud=TRUE,Lr=TRUE,Ur=TRUE)
@@ -39,16 +41,16 @@ make_missing <- function(data,LT=0,UT=Inf,LC=0,UC=Inf,
   }
 
   pick <- is.infinite(data$rt) | (data$rt>LT & data$rt<UT)
+  if (verbose & (!any(pick))) message("Proportion of data truncated: ",mean(pick))
   pick[is.na(pick)] <- TRUE
   out <- censor(data[pick,],L=LC,U=UC,Lr=LCresponse,Ur=UCresponse,Ld=LCdirection,Ud=UCdirection)
-  if (LC != 0) attr(out,"LC") <- LC
-  if (UC != Inf) attr(out,"UC") <- UC
-  if (LT != 0) attr(out,"LT") <- LT
-  if (UT != Inf) attr(out,"UT") <- UT
+  if (any(LC != 0)) attr(out,"LC") <- LC
+  if (any(UC != Inf)) attr(out,"UC") <- UC
+  if (any(LT != 0)) attr(out,"LT") <- LT
+  if (any(UT != Inf)) attr(out,"UT") <- UT
+  if (!is.null(pc)) attr(out,"pc") <- pc[pick]
   out
 }
-
-
 #' Simulate data
 #'
 #' Simulates data based on a model design and a parameter vector (`p_vector`) by one of two methods:
