@@ -9,8 +9,8 @@ c_map_p <- function(p_vector, p_types, designs, n_trials, dynamic, data) {
     .Call(`_EMC2_c_map_p`, p_vector, p_types, designs, n_trials, dynamic, data)
 }
 
-calc_ll <- function(p_matrix, data, constants, designs, n_trials, type, p_types, winner, expand, min_ll, group_idx) {
-    .Call(`_EMC2_calc_ll`, p_matrix, data, constants, designs, n_trials, type, p_types, winner, expand, min_ll, group_idx)
+calc_ll <- function(p_matrix, data, constants, designs, type, p_types, min_ll, group_idx) {
+    .Call(`_EMC2_calc_ll`, p_matrix, data, constants, designs, type, p_types, min_ll, group_idx)
 }
 
 d_DDM_c <- function(rts, R, group_idx, pars, precision = 3, stop_on_error = TRUE) {
