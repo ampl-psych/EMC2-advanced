@@ -548,15 +548,15 @@ compress_dadm <- function(da,designs,Fcov,Ffun)
     apply(do.call(cbind,lapply(designs,function(x){
       apply(x[attr(x,"expand"),,drop=FALSE],1,paste,collapse="_")})
     ),1,paste,collapse="+"),da$subjects,da$R,da$lR,da$rt,sep="+")
-  if (!is.null(Fcov)) {
-    if (is.null(names(Fcov))) nFcov <- Fcov else nFcov <- names(Fcov)
-    cells <- paste(cells,apply(da[,nFcov,drop=FALSE],1,paste,collapse="+"),sep="+")
-  }
+  # Make sure that if row is included for a trial so are other rows
+  if (!is.null(Fcov))
+    cells <- paste(cells,apply(da[,names(Fcov),drop=FALSE],1,paste,collapse="+"),sep="+")
   if (!is.null(Ffun))
     cells <- paste(cells,apply(da[,Ffun,drop=FALSE],1,paste,collapse="+"),sep="+")
-  # Make sure that if row is included for a trial so are other rows
+
   if (nacc>1) cells <- paste0(rep(apply(matrix(cells,nrow=nacc),2,paste0,collapse="_"),
                                   each=nacc),rep(1:nacc,times=length(cells)/nacc),sep="_")
+
   contract <- !duplicated(cells)
   out <- da[contract,,drop=FALSE]
   attr(out,"contract") <- contract
@@ -575,16 +575,6 @@ compress_dadm <- function(da,designs,Fcov,Ffun)
   attr(out,"unique_nort") <- !duplicated(cells_nort)
   attr(out,"expand_nort") <- as.numeric(factor(cells_nort,levels=unique(cells_nort)))
 
-  # cells_nort <- paste(
-  #   apply(do.call(cbind,lapply(designs,function(x){
-  #     apply(x[attr(x,"expand"),,drop=FALSE],1,paste,collapse="_")})
-  #   ),1,paste,collapse="+"),da$subjects,da$R,da$lR,sep="+")[contract]
-  # attr(out,"unique_nort") <- !duplicated(cells_nort)
-  # # Only first level WHY????
-  # cells <- cells[da$lR==levels(da$lR)[1]]
-  # cells_nort <- cells_nort[out$lR==levels(out$lR)[1]]
-  # attr(out,"expand_nort") <- as.numeric(factor(cells_nort,
-  #    levels=unique(cells_nort)))[as.numeric(factor(cells,levels=unique(cells)))]
 
   # indices to use to contract ignoring rt and response (R), then expand back
   cells_nortR <- paste(apply(do.call(cbind,lapply(designs,function(x){
@@ -592,16 +582,6 @@ compress_dadm <- function(da,designs,Fcov,Ffun)
     da$subjects,da$lR,sep="+")[contract]
   attr(out,"unique_nortR") <- !duplicated(cells_nortR)
   attr(out,"expand_nortR") <- as.numeric(factor(cells_nortR,levels=unique(cells_nortR)))
-
-  # # indices to use to contract ignoring rt and response (R), then expand back
-  # cells_nortR <- paste(apply(do.call(cbind,lapply(designs,function(x){
-  #   apply(x[attr(x,"expand"),,drop=FALSE],1,paste,collapse="_")})),1,paste,collapse="+"),
-  #   da$subjects,da$lR,sep="+")[contract]
-  # attr(out,"unique_nortR") <- !duplicated(cells_nortR)
-  # # Only first level WHY????
-  # cells_nortR <- cells_nortR[out$lR==levels(out$lR)[1]]
-  # attr(out,"expand_nortR") <- as.numeric(factor(cells_nortR,
-  #    levels=unique(cells_nortR)))[as.numeric(factor(cells,levels=unique(cells)))]
 
   # Lower censor
   if (!any(is.na(out$rt))) { # Not an choice only model
@@ -620,7 +600,6 @@ compress_dadm <- function(da,designs,Fcov,Ffun)
   }
   out
 }
-
 
 dadmRL <- function(dadm,design)
   # Augments design and dadm for RL models
