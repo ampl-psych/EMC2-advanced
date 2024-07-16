@@ -3,16 +3,20 @@ get_pars_matrix <- function(p_vector,dadm) {
   # to the natural scale, and create trial-dependent parameters. Ordinal
   # parameters are first exponentiated.
 
-  if (!is.null(attr(dadm,"ordinal")))
-    if (is.matrix(p_vector))
-       p_vector[,attr(dadm,"ordinal")] <- exp(p_vector[,attr(dadm,"ordinal")]) else
-       p_vector[attr(dadm,"ordinal")] <- exp(p_vector[attr(dadm,"ordinal")])
+  if (!is.null(attr(dadm,"ordinal"))){
+    if (is.matrix(p_vector)){
+      p_vector[,attr(dadm,"ordinal")] <- exp(p_vector[,attr(dadm,"ordinal")])
+    } else{
+      p_vector[attr(dadm,"ordinal")] <- exp(p_vector[attr(dadm,"ordinal")])
+    }
+  }
+
 
   attr(dadm,"model")()$Ttransform(
     attr(dadm,"model")()$Ntransform(
       map_p(
         attr(dadm,"model")()$transform(add_constants(p_vector,attr(dadm,"constants"))),
-        dadm)),
+        dadm),attr(dadm, "transform_names")),
     dadm)
 }
 
@@ -159,8 +163,15 @@ mapped_par <- function(p_vector,design,model=NULL,
   dadm <- design_model(make_data(p_vector,design,n_trials=1,Fcovariates=Fcovariates),
                        design,model,rt_check=FALSE,compress=FALSE)
   ok <- !(names(dadm) %in% c("subjects","trials","R","rt","winner"))
-  out <- cbind(dadm[,ok],round(get_pars_matrix(p_vector,dadm),digits))
-  if (model()$type=="SDT")  out <- out[dadm$lR!=levels(dadm$lR)[length(levels(dadm$lR))],]
+  if (!is.null(attr(dadm,"advantage"))) {
+    na <- length(levels(dadm$lR))-1
+    adadm <- data.frame(lapply(dadm,rep,each=na))
+    adadm$lA <- rep(1:(na),length.out=nrow(dadm))
+    message("Advantage model: added column lA for accumulators within lR")
+    ok <- c(ok,TRUE)
+  } else adadm <- dadm
+  out <- cbind(adadm[,ok],round(get_pars(p_vector,dadm),digits))
+  if (model()$type=="SDT")  out <- out[adadm$lR!=levels(adadm$lR)[length(levels(dadm$lR))],]
   if (model()$type=="DDM")  out <- out[,!(names(out) %in% c("lR","lM"))]
   if (any(names(out)=="RACE") && remove_RACE)
     out <- out[as.numeric(out$lR) <= as.numeric(as.character(out$RACE)),,drop=FALSE]
@@ -247,8 +258,11 @@ map_mcmc <- function(mcmc,design,include_constants = TRUE, add_recalculated = FA
     pmat <- model()$transform(add_constants(mcmc,constants))
     plist <- lapply(map,doMap,pmat=pmat)
     if (model()$type=="SDT") {
-      ht <- apply(map$threshold[,grepl("lR",dimnames(map$threshold)[[2]]),drop=FALSE],1,sum)
-      plist$threshold <- plist$threshold[,ht!=max(ht),drop=FALSE]
+      islR <- grepl("lR",dimnames(map$threshold)[[2]])
+      if (any(islR)) {
+        ht <- apply(map$threshold[,islR,drop=FALSE],1,sum)
+        plist$threshold <- plist$threshold[,ht!=max(ht),drop=FALSE]
+      }
     }
     # Give mapped variables names and flag constant
     for (i in 1:length(plist)) {
@@ -264,12 +278,13 @@ map_mcmc <- function(mcmc,design,include_constants = TRUE, add_recalculated = FA
     pmat <- do.call(cbind,plist)
     cnams <- colnames(pmat)
     colnames(pmat) <- get_p_types(cnams)
-    pmat[,] <- model()$Ntransform(pmat)[,1:length(cnams)]
+    pmat[,] <- model()$Ntransform(pmat,use=attr(design$dynamic,"transform_names"))[,1:length(cnams)]
 
     if(add_recalculated) extras <- add_recalculated_pars(pmat, model, cnams)
     colnames(pmat) <- cnams
     if(add_recalculated) pmat <- cbind(pmat, extras)
     is_constant <- apply(pmat,2,function(x){all(x[1]==x[-1])})
+    is_constant[is.na(is_constant)] <- TRUE
     if(!include_constants){
       pmat <- pmat[,!is_constant, drop = F]
     }
