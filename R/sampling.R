@@ -801,6 +801,10 @@ get_variant_funs <- function(type = "standard") {
 }
 
 calc_ll_manager <- function(proposals, dadm, ll_func, component = NULL){
+  p_types <- names(attr(dadm,"model")()$p_types)
+  if(is.null(attr(dadm, "transform_names"))){
+    attr(dadm, "transform_names") <- p_types
+  }
   if(!is.data.frame(dadm)){
     lls <- log_likelihood_joint(proposals, dadm, component)
   } else{
@@ -808,7 +812,6 @@ calc_ll_manager <- function(proposals, dadm, ll_func, component = NULL){
     if(is.null(c_name)){ # use the R implementation
       lls <- apply(proposals,1, ll_func,dadm = dadm)
     } else{
-      p_types <- names(attr(dadm,"model")()$p_types)
       designs <- list()
       for(p in p_types){
         designs[[p]] <- attr(dadm,"designs")[[p]][attr(attr(dadm,"designs")[[p]],"expand"),,drop=FALSE]

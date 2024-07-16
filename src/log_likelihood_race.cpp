@@ -402,58 +402,58 @@ NumericVector calc_ll(NumericMatrix p_matrix, DataFrame data, NumericVector cons
   p_vector.names() = p_names;
   NumericVector expand = data.attr("expand");
   List dynamic = data.attr("dynamic");
-  // if(type == "DDM"){
-  //   for(int i = 0; i < n_particles; i++){
-  //     p_vector = p_matrix(i, _);
-  //     pars = get_pars(p_vector, constants, transform_DDM, Ntransform_DDM, p_types, designs, n_trials, dynamic, data);
-  //     lls[i] = c_log_likelihood_DDM(pars, data, n_trials, expand, min_ll, group_idx);
-  //   }
-  // } else if(type == "TRDM"){
-  //   LogicalVector winner = data["winner"];
-  //   for(int i = 0; i < n_particles; i++){
-  //     p_vector = p_matrix(i, _);
-  //     pars = get_pars(p_vector, constants, transform_trdm, Ntransform_trdm, p_types, designs, n_trials, dynamic, data);
-  //     lls[i] = c_log_likelihood_race_trdm(pars, data,n_trials, winner, expand, min_ll);
-  //   }
-  // } else{
-  //   LogicalVector winner = data["winner"];
-  //   // Love me some good old ugly but fast c++ pointers
-  //   NumericVector (*dfun)(NumericVector, NumericMatrix, LogicalVector, double);
-  //   NumericVector (*pfun)(NumericVector, NumericMatrix, LogicalVector, double);
-  //   NumericVector (*transform)(NumericVector);
-  //   NumericMatrix (*Ntransform)(NumericMatrix, CharacterVector, DataFrame, List);
-  //   // NumericMatrix (*Ttransform)(NumericMatrix);
-  //   if(type == "LBA" || type == "ALBA"){
-  //     dfun = dlba_c;
-  //     pfun = plba_c;
-  //     transform = transform_lba;
-  //     Ntransform = Ntransform_lba;
-  //   } else if(type == "RDM" || type == "ARDM"){
-  //     dfun = drdm_c;
-  //     pfun = prdm_c;
-  //     transform = transform_rdm;
-  //     Ntransform = Ntransform_rdm;
-  //   } else{
-  //     dfun = dlnr_c;
-  //     pfun = plnr_c;
-  //     transform = transform_lnr;
-  //     Ntransform = Ntransform_lnr;
-  //   }
-  //   if(type == "RDM" || type == "LBA" || type == "LNR"){
-  //     for(int i = 0; i < n_particles; i++){
-  //       p_vector = p_matrix(i, _);
-  //       pars = get_pars(p_vector, constants, transform, Ntransform, p_types, designs, n_trials, dynamic, data);
-  //       lls[i] = c_log_likelihood_race(pars, data, dfun, pfun, n_trials, winner, expand, min_ll);
-  //     }
-  //   } else{ // apparently we're a Advantage model and not a standard model
-  //     for(int i = 0; i < n_particles; i++){
-  //       p_vector = p_matrix(i, _);
-  //       pars = get_pars(p_vector, constants, transform, Ntransform, p_types, designs, n_trials, dynamic, data);
-  //       lls[i] = c_log_likelihood_race_advantage(pars, data, dfun, pfun, n_trials, winner, expand, min_ll);
-  //     }
-  //   }
-  //
-  // }
+  if(type == "DDM"){
+    for(int i = 0; i < n_particles; i++){
+      p_vector = p_matrix(i, _);
+      pars = get_pars(p_vector, constants, transform_DDM, Ntransform_DDM, p_types, designs, n_trials, dynamic, data);
+      lls[i] = c_log_likelihood_DDM(pars, data, n_trials, expand, min_ll, group_idx);
+    }
+  } else if(type == "TRDM"){
+    LogicalVector winner = data["winner"];
+    for(int i = 0; i < n_particles; i++){
+      p_vector = p_matrix(i, _);
+      pars = get_pars(p_vector, constants, transform_trdm, Ntransform_trdm, p_types, designs, n_trials, dynamic, data);
+      lls[i] = c_log_likelihood_race_trdm(pars, data,n_trials, winner, expand, min_ll);
+    }
+  } else{
+    LogicalVector winner = data["winner"];
+    // Love me some good old ugly but fast c++ pointers
+    NumericVector (*dfun)(NumericVector, NumericMatrix, LogicalVector, double);
+    NumericVector (*pfun)(NumericVector, NumericMatrix, LogicalVector, double);
+    NumericVector (*transform)(NumericVector);
+    NumericMatrix (*Ntransform)(NumericMatrix, CharacterVector, DataFrame, List);
+    // NumericMatrix (*Ttransform)(NumericMatrix);
+    if(type == "LBA" || type == "ALBA"){
+      dfun = dlba_c;
+      pfun = plba_c;
+      transform = transform_lba;
+      Ntransform = Ntransform_lba;
+    } else if(type == "RDM" || type == "ARDM"){
+      dfun = drdm_c;
+      pfun = prdm_c;
+      transform = transform_rdm;
+      Ntransform = Ntransform_rdm;
+    } else{
+      dfun = dlnr_c;
+      pfun = plnr_c;
+      transform = transform_lnr;
+      Ntransform = Ntransform_lnr;
+    }
+    if(type == "RDM" || type == "LBA" || type == "LNR"){
+      for(int i = 0; i < n_particles; i++){
+        p_vector = p_matrix(i, _);
+        pars = get_pars(p_vector, constants, transform, Ntransform, p_types, designs, n_trials, dynamic, data);
+        lls[i] = c_log_likelihood_race(pars, data, dfun, pfun, n_trials, winner, expand, min_ll);
+      }
+    } else{ // apparently we're a Advantage model and not a standard model
+      for(int i = 0; i < n_particles; i++){
+        p_vector = p_matrix(i, _);
+        pars = get_pars(p_vector, constants, transform, Ntransform, p_types, designs, n_trials, dynamic, data);
+        lls[i] = c_log_likelihood_race_advantage(pars, data, dfun, pfun, n_trials, winner, expand, min_ll);
+      }
+    }
+
+  }
   return(lls);
 }
 
