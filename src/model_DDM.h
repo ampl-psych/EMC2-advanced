@@ -35,6 +35,7 @@
 // Used by both PDF and CDF (also includes tuning params)
 #include "Parameters_DDM.h"
 #include "utility_functions.h"
+#include "dynamic.h"
 
 
 // While not enforced, this is the global parameters Singleton
@@ -308,7 +309,9 @@ NumericVector d_DDM_c (NumericVector rts, NumericVector R, List group_idx, Numer
   for(int k = 0; k < group_idx.length(); k ++){
     NumericVector total_idx = group_idx[k];
     int first_idx = total_idx[0] - 1;
-    if((pars(first_idx,0) > 20 || pars(first_idx,1) > 10 || pars(first_idx,2) > 10 || pars(first_idx, 7) > .999 || pars(first_idx,4) > .2)){
+    if((pars(first_idx,0) > 20 || pars(first_idx,1) > 10 || pars(first_idx,1) < 0 || pars(first_idx,2) > 10 ||
+       pars(first_idx, 7) > .999 || pars(first_idx, 6) > .999 || pars(first_idx, 6) < 0.001 || pars(first_idx,4) > .5 ||
+       pars(first_idx,3) < .05 || pars(first_idx,4) < 0 || pars(first_idx,8) < 0 || pars(first_idx,8) > 1 )){
       continue;
     } else if((pars(first_idx,2) != 0 && pars(first_idx,2) < 0.001)){
       continue;
@@ -351,20 +354,26 @@ NumericVector d_DDM_c (NumericVector rts, NumericVector R, List group_idx, Numer
 }
 
 
-NumericMatrix Ntransform_DDM(NumericMatrix x) {
+NumericMatrix Ntransform_DDM(NumericMatrix x, CharacterVector use, DataFrame data, List adaptive) {
   NumericMatrix out(clone(x));
   CharacterVector is_log = {"a","sv","t0","st0","s"};
   CharacterVector is_probit = {"Z","SZ","DP"};
   LogicalVector col_idx_log = contains_multiple(colnames(x), is_log);
   LogicalVector col_idx_probit = contains_multiple(colnames(x), is_probit);
+  LogicalVector use_idx = contains_multiple(colnames(x), use);
   for(int i = 0; i < x.ncol(); i ++){
-    if(col_idx_log[i] == TRUE){
-      out (_, i) = exp(out(_, i));
-    };
-    if(col_idx_probit[i] == TRUE){
-      out (_, i) = pnorm_multiple(out(_, i));
-    };
+    if(use_idx[i] == TRUE){
+      if(col_idx_log[i] == TRUE){
+        out (_, i) = exp(out(_, i));
+      };
+      if(col_idx_probit[i] == TRUE){
+        out (_, i) = pnorm_multiple(out(_, i));
+      };
+    }
   };
+  if(adaptive.length() > 0){
+    out = map_adaptive(adaptive, out, data);
+  }
   return(out);
 }
 

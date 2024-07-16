@@ -4,6 +4,9 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <Rcpp.h>
+#include "utility_functions.h"
+#include "dynamic.h"
+#include "advantage.h"
 
 using namespace Rcpp;
 
@@ -112,12 +115,12 @@ double digt(double t, double k = 1., double l = 1., double a = .1, double thresh
 
 NumericVector drdm_c(NumericVector rts, NumericMatrix pars, LogicalVector idx, double min_ll){
   //v = 0, B = 1, A = 2, t0 = 3, s = 4
-  int n = sum(idx);
-  NumericVector out(n);
+  NumericVector out(sum(idx));
   int k = 0;
   for(int i = 0; i < rts.length(); i++){
     if(idx[i] == TRUE){
-      if(!NumericVector::is_na(pars(i,0)) && (rts[i] - pars(i,3) > 0) && (pars(i,3) > 0.05) && ((pars(i,2) > 1e-6) || (pars(i,2) == 0)) && ((pars(i,0) > 1e-3) || (pars(i,0) == 0))){
+      if(!NumericVector::is_na(pars(i,0)) & (rts[i] - pars(i,3) > 0) & (pars(i,3) > 0.05) & ((pars(i,2) > 1e-6) | (pars(i,2) == 0)) &
+         ((pars(i,0) > 1e-3) | (pars(i,0) == 0)) & (pars(i, 1) > 0) & (pars(i, 4) > 0)){
         out[k] = digt(rts[i] - pars(i,3), pars(i,1)/pars(i,4) + .5 * pars(i,2)/pars(i,4), pars(i,0)/pars(i,4), .5*pars(i,2)/pars(i,4));
       } else{
         out[k] = min_ll;
@@ -131,12 +134,12 @@ NumericVector drdm_c(NumericVector rts, NumericMatrix pars, LogicalVector idx, d
 
 NumericVector prdm_c(NumericVector rts, NumericMatrix pars, LogicalVector idx, double min_ll){
   //v = 0, B = 1, A = 2, t0 = 3, s = 4
-  int n = sum(idx);
-  NumericVector out(n);
+  NumericVector out(sum(idx));
   int k = 0;
   for(int i = 0; i < rts.length(); i++){
     if(idx[i] == TRUE){
-      if(!NumericVector::is_na(pars(i,0)) && (rts[i] - pars(i,3) > 0) && (pars(i,3) > 0.05) && ((pars(i,2) > 1e-6) || (pars(i,2) == 0)) && ((pars(i,0) > 1e-3) || (pars(i,0) == 0))){
+      if(!NumericVector::is_na(pars(i,0)) & (rts[i] - pars(i,3) > 0) & (pars(i,3) > 0.049) & ((pars(i,2) > 1e-6) | (pars(i,2) == 0)) &
+         ((pars(i,0) > 1e-3) | (pars(i,0) == 0)) & (pars(i, 1) > 0) & (pars(i, 4) > 0)){
         out[k] = pigt(rts[i] - pars(i,3), pars(i,1)/pars(i,4) + .5 * pars(i,2)/pars(i,4), pars(i,0)/pars(i,4), .5*pars(i,2)/pars(i,4));
       } else{
         out[k] = min_ll;
@@ -149,11 +152,26 @@ NumericVector prdm_c(NumericVector rts, NumericMatrix pars, LogicalVector idx, d
 }
 
 
-NumericMatrix Ntransform_rdm(NumericMatrix x) {
+NumericMatrix Ntransform_rdm(NumericMatrix x, CharacterVector use, DataFrame data, List adaptive) {
   NumericMatrix out(clone(x));
+
+  LogicalVector use_idx = contains_multiple(colnames(x), use);
   for(int i = 0; i < x.ncol(); i ++){
-    out (_, i) = exp(out(_, i));
+    if(use_idx[i] == TRUE){
+      out (_, i) = exp(out(_, i));
+    }
   };
+  if(adaptive.length() > 0){
+    out = map_adaptive(adaptive, out, data);
+  }
+  List advantage = data.attr("advantage");
+  if(advantage.length() > 0){
+    String par_name = advantage.names();
+    String S_name = advantage[0];
+    NumericVector SV = data[S_name];
+    CharacterVector R = data["R"];
+    out = advantagepars(out, SV,unique(R).length(),par_name);
+  }
   return(out);
 }
 
@@ -195,4 +213,37 @@ NumericVector pWald(NumericVector t, NumericVector v,
 }
 
 #endif
+
+NumericMatrix Ntransform_trdm(NumericMatrix x, CharacterVector use, DataFrame data, List adaptive) {
+  NumericMatrix out(clone(x));
+
+  LogicalVector use_idx = contains_multiple(colnames(x), use);
+  LogicalVector not_exp_idx = contains(colnames(x), "pGuess");
+  for(int i = 0; i < x.ncol(); i ++){
+    if(use_idx[i] == TRUE){
+      if(not_exp_idx[i] == FALSE){
+        out (_, i) = exp(out(_, i));
+      } else{
+        NumericVector tmpGuess = out(_, i);
+      }
+    }
+  };
+  if(adaptive.length() > 0){
+    out = map_adaptive(adaptive, out, data);
+  }
+  List advantage = data.attr("advantage");
+  if(advantage.length() > 0){
+    String par_name = advantage.names();
+    String S_name = advantage[0];
+    NumericVector SV = data[S_name];
+    CharacterVector R = data["R"];
+    out = advantagepars(out, SV,unique(R).length(),par_name);
+  }
+  return(out);
+}
+
+NumericVector transform_trdm(NumericVector x){
+  return(x);
+}
+
 
