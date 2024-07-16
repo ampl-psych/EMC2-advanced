@@ -25,7 +25,7 @@ plot_fit(
   q_points = c(0.1, 0.3, 0.5, 0.7, 0.9),
   qp_cex = 1,
   pqp_cex = 0.5,
-  lpos = "topleft",
+  lpos = "right",
   main = ""
 )
 }
@@ -34,14 +34,15 @@ plot_fit(
 subject factor), \code{R} (i.e., the response factor) and \code{rt} (i.e., response time) variable.
 Additional factor variables of the design are optional.}
 
-\item{pp}{A data frame. Posterior predictives created by \code{post_predict()}}
+\item{pp}{A data frame. Posterior predictives created by \code{predict()}}
 
 \item{subject}{Integer or string selecting a subject from the data. If specified only that subject
 is plotted. \code{NULL} (i.e., the default), will plot all subjects.}
 
 \item{factors}{Character vector of factors in data to display separately. If
 NULL (default) use names of all columns in data except "trials","R", and "rt".
-Omitted factors are aggregated over. If NA treats entire data set as a single cell.}
+Omitted factors are aggregated over. If NA treats entire data set as a single cell.
+Must be NA or NULL when using stat argument.}
 
 \item{functions}{A named list of functions that create new factors which can then be
 used by the factors and stat arguments.}
@@ -107,8 +108,8 @@ Also see \code{?plot_defective_density()} for more details.
 }
 \examples{
 \dontrun{
-# First generate posterior predictives based on a samplers object run with run_emc
-pp <- post_predict(samplers, n_cores = 4)
+# First generate posterior predictives based on an emc object run with run_emc
+pp <- predict(samples_LNR, n_cores = 4)
 # Then visualize the model fit
 plot_fit(forstmann, pp, factors = c("S", "E"), layout = c(2,3))
 

@@ -4,7 +4,8 @@ test_that("density_plot", {
                                              layout = c(2,3)))
     vdiffr::expect_doppelganger("density_full_E",
                       plot_defective_density(forstmann, factors = c("E"),
-                                             correct_fun = function(d) d$R == d$S, layout = c(3,1)))
+                                             correct_fun = function(d) d$R == d$S,
+                      layout = c(3,1)))
     vdiffr::expect_doppelganger("density_full_S",
                                 plot_defective_density(forstmann, factors = c("S"),
                                                        correct_fun = function(d) d$R == d$S,

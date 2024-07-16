@@ -3,7 +3,7 @@ log_likelihood_race <- function(p_vector,dadm,min_ll=log(1e-10))
   # Race model summed log likelihood
 {
 
-  pars <- get_pars(p_vector,dadm)
+  pars <- get_pars_matrix(p_vector,dadm)
 
   if (any(names(dadm)=="RACE")) # Some accumulators not present
     pars[as.numeric(dadm$lR)>as.numeric(as.character(dadm$RACE)),] <- NA
@@ -36,7 +36,7 @@ log_likelihood_race <- function(p_vector,dadm,min_ll=log(1e-10))
 log_likelihood_ddm <- function(p_vector,dadm,min_ll=log(1e-10))
   # DDM summed log likelihood, with protection against numerical issues
 {
-  pars <- get_pars(p_vector,dadm)
+  pars <- get_pars_matrix(p_vector,dadm)
   like <- numeric(dim(dadm)[1])
   if (any(attr(pars,"ok")))
     like[attr(pars,"ok")] <- attr(dadm,"model")()$dfun(dadm$rt[attr(pars,"ok")],dadm$R[attr(pars,"ok")],
@@ -53,7 +53,7 @@ log_likelihood_sdt <- function(p_vector,dadm,lb=-Inf,min_ll=log(1e-10))
   # lb. Upper bound for last response is a fixed value in threshold vector
 {
 
-  pars <- get_pars(p_vector,dadm)
+  pars <- get_pars_matrix(p_vector,dadm)
   first <- dadm$lR==levels(dadm$lR)[1]
   last <- dadm$lR==levels(dadm$lR)[length(levels(dadm$lR))]
   pars[last,"threshold"] <- Inf
@@ -92,7 +92,7 @@ log_likelihood_joint <- function(proposals, dadms, component = NULL){
       i <- i + 1
       parPrefix <- parPreFixs[i]
       columns_to_use <- sapply(strsplit(colnames(proposals), "|", fixed = TRUE), function(x) x == parPrefix)[1,]
-      currentPars <- proposals[,columns_to_use]
+      currentPars <- proposals[,columns_to_use, drop = F]
       colnames(currentPars) <- gsub(".*[|]", "", colnames(currentPars))
       total_ll <- total_ll +  calc_ll_manager(currentPars, dadm, attr(dadm, "model")()$log_likelihood)
     }

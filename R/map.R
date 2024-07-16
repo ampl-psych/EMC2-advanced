@@ -1,26 +1,26 @@
-get_pars <- function(p_vector,dadm) {
+get_pars_matrix <- function(p_vector,dadm) {
   # Add constants, transform p_vector, map to design, transform mapped parameters
   # to the natural scale, and create trial-dependent parameters. Ordinal
   # parameters are first exponentiated.
 
   if (!is.null(attr(dadm,"ordinal")))
     if (is.matrix(p_vector))
-      p_vector[,attr(dadm,"ordinal")] <- exp(p_vector[,attr(dadm,"ordinal")]) else
-        p_vector[attr(dadm,"ordinal")] <- exp(p_vector[attr(dadm,"ordinal")])
+       p_vector[,attr(dadm,"ordinal")] <- exp(p_vector[,attr(dadm,"ordinal")]) else
+       p_vector[attr(dadm,"ordinal")] <- exp(p_vector[attr(dadm,"ordinal")])
 
-      attr(dadm,"model")()$Ttransform(
-        attr(dadm,"model")()$Ntransform(
-          map_p(
-            attr(dadm,"model")()$transform(add_constants(p_vector,attr(dadm,"constants"))),
-            dadm),attr(dadm, "transform_names")),
-        dadm)
+  attr(dadm,"model")()$Ttransform(
+    attr(dadm,"model")()$Ntransform(
+      map_p(
+        attr(dadm,"model")()$transform(add_constants(p_vector,attr(dadm,"constants"))),
+        dadm)),
+    dadm)
 }
 
 get_design <- function(samples)
   # prints out design from samples object
 {
   design <- attr(samples,"design_list")[[1]]
-  model <- attr(samples, "model_list")[[1]]
+  model <- design$model
   design$Ffactors$subjects <- design$Ffactors$subjects[1]
   dadm <- design_model(make_data(sampled_p_vector(design,model),design,n_trials=1),design,model,
                        rt_check=FALSE,compress=FALSE)
@@ -34,7 +34,8 @@ get_design_matrix <- function(samples){
 get_map <- function(samples,add_design=TRUE) {
   out <- attr(attr(attr(samples,"design_list")[[1]],"p_vector"),"map")
   if (add_design) {
-    mnl <- mapped_name_list(attr(samples,"design_list")[[1]],attr(samples,"model_list")[[1]],TRUE)
+    design <- attr(samples,"design_list")[[1]]
+    mnl <- mapped_name_list(design, design$model,TRUE)
     for (i in names(out)) out[[i]] <- cbind(mnl[[i]],out[[i]])
   }
   out
@@ -121,7 +122,7 @@ add_constants_mcmc <- function(p,constants){
 #' differ across the experimental factors.
 #'
 #' @param p_vector A parameter vector. Must be in the form of ``sampled_p_vector(design)``
-#' @param design A design list. Created ``by make_design``
+#' @param design A design list. Created by ``design``
 #' @param model Optional model type (if not already specified in ``design``)
 #' @param digits Integer. Will round the output parameter values to this many decimals
 #' @param ... optional arguments
@@ -130,7 +131,7 @@ add_constants_mcmc <- function(p,constants){
 #' @return Matrix with a column for each factor in the design and for each model parameter type (``p_type``).
 #' @examples
 #' # First define a design:
-#' design_DDMaE <- make_design(data = forstmann,model=DDM,
+#' design_DDMaE <- design(data = forstmann,model=DDM,
 #'                            formula =list(v~0+S,a~E, t0~1, s~1, Z~1, sv~1, SZ~1),
 #'                            constants=c(s=log(1)))
 #' # Then create a p_vector:
@@ -140,92 +141,153 @@ add_constants_mcmc <- function(p,constants){
 #' mapped_par(p_vector,design_DDMaE)
 #'
 #' @export
+
 mapped_par <- function(p_vector,design,model=NULL,
                        digits=3,remove_subjects=TRUE, ...)
   # Show augmented data and corresponding mapped parameter
 {
   remove_RACE <- TRUE
-  covariates <- NULL
   optionals <- list(...)
   for (name in names(optionals) ) {
     assign(name, optionals[[name]])
   }
+  Fcovariates <- design$Fcovariates
   if (is.null(model)) if (is.null(design$model))
-    stop("Must specify model as not in design") else model <- design$model
-    if (remove_subjects) design$Ffactors$subjects <- design$Ffactors$subjects[1]
-    if (!is.matrix(p_vector)) p_vector <- make_pmat(p_vector,design)
-    dadm <- design_model(make_data(p_vector,design,n_trials=1,Fcovariates=covariates),
-                         design,model,rt_check=FALSE,compress=FALSE)
-    ok <- !(names(dadm) %in% c("subjects","trials","R","rt","winner"))
-    if (!is.null(attr(dadm,"advantage"))) {
-      na <- length(levels(dadm$lR))-1
-      adadm <- data.frame(lapply(dadm,rep,each=na))
-      adadm$lA <- rep(1:(na),length.out=nrow(dadm))
-      message("Advantage model: added column lA for accumulators within lR")
-      ok <- c(ok,TRUE)
-    } else adadm <- dadm
-    pars <- get_pars(p_vector,dadm)
-    out <- cbind(adadm[,ok],round(pars[,!dimnames(pars)[[2]]=="SSD"],digits))
-    out <- out[,!(names(out) %in% c("lI","staircase"))]  # stop signal models
-    if (model()$type=="SDT")  out <- out[adadm$lR!=levels(adadm$lR)[length(levels(dadm$lR))],]
-    if (model()$type=="DDM")  out <- out[,!(names(out) %in% c("lR","lM"))]
-    if (any(names(out)=="RACE") && remove_RACE)
-      out <- out[as.numeric(out$lR) <= as.numeric(as.character(out$RACE)),,drop=FALSE]
-    return(out)
+  stop("Must specify model as not in design") else model <- design$model
+  if (remove_subjects) design$Ffactors$subjects <- design$Ffactors$subjects[1]
+  if (!is.matrix(p_vector)) p_vector <- make_pmat(p_vector,design)
+  dadm <- design_model(make_data(p_vector,design,n_trials=1,Fcovariates=Fcovariates),
+                       design,model,rt_check=FALSE,compress=FALSE)
+  ok <- !(names(dadm) %in% c("subjects","trials","R","rt","winner"))
+  out <- cbind(dadm[,ok],round(get_pars_matrix(p_vector,dadm),digits))
+  if (model()$type=="SDT")  out <- out[dadm$lR!=levels(dadm$lR)[length(levels(dadm$lR))],]
+  if (model()$type=="DDM")  out <- out[,!(names(out) %in% c("lR","lM"))]
+  if (any(names(out)=="RACE") && remove_RACE)
+    out <- out[as.numeric(out$lR) <= as.numeric(as.character(out$RACE)),,drop=FALSE]
+  return(out)
 }
 
-# mcmc=mcmcList[[1]]; design=attr(samplers,"design_list")[[1]];model=attr(samplers,"model_list")[[1]]
-map_mcmc <- function(mcmc,design,model, include_constants = TRUE)
+add_recalculated_pars <- function(pmat, model, cnams){
+  modifiers <- unlist(lapply(strsplit(cnams,"_"),function(x){paste0(x[-1], collapse = "_")}))
+  par_names <- colnames(pmat)
+  unq_pars <- unique(par_names)
+  par_table <- table(par_names)
+  counts <- lapply(par_table, function(x) return(1:x))
+  combn <- do.call(expand.grid, counts)
+  colnames(combn) <- names(par_table)
+
+  out <- list()
+  modfs <- list()
+  for(r in 1:nrow(combn)){
+    pmat_in <- matrix(NA, nrow = nrow(pmat), ncol = length(unq_pars))
+    colnames(pmat_in) <- unq_pars
+    cur_modifiers <- setNames(numeric(length(unq_pars)), unq_pars)
+    for(par in unq_pars){
+      pmat_in[,par] <- pmat[,which(colnames(pmat) == par)[combn[r,par]]]
+      cur_modifiers[par] <- modifiers[which(colnames(pmat) == par)[combn[r,par]]]
+    }
+    added <- model()$Ttransform(pmat_in)
+    added <- added[, !(colnames(added) %in% colnames(pmat_in)), drop = F]
+    attr(added, "ok") <- NULL
+    out[[r]] <- added
+    modfs[[r]] <- cur_modifiers
+  }
+  m_out <- matrix(0, nrow = nrow(pmat), ncol = 0)
+  if(ncol(out[[1]]) == 0) return(NULL)
+  for(i in 1:ncol(out[[1]])){
+    cur_par <- lapply(out, function(x) x[,i, drop = F])
+    not_dups <- !duplicated(cur_par)
+    cur_combn <- combn[not_dups,]
+    pars_vary <- colnames(cur_combn)[colMeans(cur_combn) != 1]
+    to_add <- do.call(cbind, cur_par[not_dups])
+    cur_modfs <- modfs[not_dups]
+    fnams <- sapply(cur_modfs, function(x) paste0(unique(unlist(strsplit(x[pars_vary], split = "_"))), collapse = "_"))
+    colnames(to_add) <- paste0(colnames(to_add)[1], "_", fnams)
+    m_out <- cbind(m_out, to_add)
+  }
+  return(m_out)
+}
+
+map_mcmc <- function(mcmc,design,include_constants = TRUE, add_recalculated = FALSE)
   # Maps vector or matrix (usually mcmc object) of sampled parameters to native
   # model parameterization.
 {
+  model <- design$model
   doMap <- function(mapi,pmat) t(mapi %*% t(pmat[,dimnames(mapi)[[2]],drop=FALSE]))
 
-  get_p_types <- function(nams)
-    unlist(lapply(strsplit(nams,"_"),function(x){x[[1]]}))
+  get_p_types <- function(nams, reverse = FALSE){
+    if(reverse){
+      out <- unlist(lapply(strsplit(nams,"_"),function(x){x[[-1]]}))
+    } else{
+      out <- unlist(lapply(strsplit(nams,"_"),function(x){x[[1]]}))
+    }
+    return(out)
+  }
 
-  if (!is.matrix(mcmc)) mcmc <- t(as.matrix(mcmc))
 
+  map <- attr(sampled_p_vector(design, add_da = TRUE, all_cells_dm = TRUE),"map")
+
+  constants <- design$constants
+  if (!is.matrix(mcmc) & !is.array(mcmc)) mcmc <- t(as.matrix(mcmc))
   if (!is.null(attr(design,"ordinal")))
     mcmc[,attr(design,"ordinal")] <- exp(mcmc[,attr(design,"ordinal")])
 
-  map <- attr(sampled_p_vector(design, add_da = TRUE, all_cells_dm = TRUE),"map")
-  constants <- design$constants
-  mcmc <- mcmc[,!(dimnames(mcmc)[[2]] %in% names(constants))]
-  mp <- mapped_par(mcmc[1,],design,remove_RACE=FALSE)
-  pmat <- model()$transform(add_constants(mcmc,constants))
-  plist <- lapply(map,doMap,pmat=pmat)
-  if (model()$type=="SDT") {
-    islR <- grepl("lR",dimnames(map$threshold)[[2]])
-    if (any(islR)) {
-      ht <- apply(map$threshold[,islR,drop=FALSE],1,sum)
+  if(length(dim(mcmc)) == 2){
+    is_matrix <- TRUE
+    mcmc_array <- array(mcmc, dim = c(nrow(mcmc), 1, ncol(mcmc)))
+    rownames(mcmc_array) <- rownames(mcmc)
+  } else{
+    mcmc_array <- mcmc
+    is_matrix <- FALSE
+  }
+  mp <- mapped_par(mcmc_array[,1,1],design,remove_RACE=FALSE)
+
+  for(k in 1:ncol(mcmc_array)){
+    mcmc <- t(mcmc_array[,k,])
+    pmat <- model()$transform(add_constants(mcmc,constants))
+    plist <- lapply(map,doMap,pmat=pmat)
+    if (model()$type=="SDT") {
+      ht <- apply(map$threshold[,grepl("lR",dimnames(map$threshold)[[2]]),drop=FALSE],1,sum)
       plist$threshold <- plist$threshold[,ht!=max(ht),drop=FALSE]
     }
-  }
-  # Give mapped variables names and flag constant
-  isConstant <- NULL
-  for (i in 1:length(plist)) {
-    vars <- row.names(attr(terms(design$Flist[[i]]),"factors"))
-    uniq <- !duplicated(apply(mp[,vars],1,paste,collapse="_"))
-    if (is.null(vars)) dimnames(plist[[i]])[2] <- names(plist)[i] else {
-      dimnames(plist[[i]])[[2]] <-
-        paste(vars[1],apply(mp[uniq,vars[-1],drop=FALSE],1,paste,collapse="_"),sep="_")
+    # Give mapped variables names and flag constant
+    for (i in 1:length(plist)) {
+      vars <- row.names(attr(terms(design$Flist[[i]]),"factors"))
+      uniq <- !duplicated(apply(mp[,vars],1,paste,collapse="_"))
+      if (is.null(vars)) {
+        colnames(plist[[i]]) <- names(plist)[i]
+      }else {
+        colnames(plist[[i]]) <- paste(vars[1],apply(mp[uniq,vars[-1],drop=FALSE],1,paste,collapse="_"),sep="_")
+      }
+      # if (is.matrix(plist[[i]])) isConstant <- c(isConstant, apply(plist[[i]],2,function(x){all(x[1]==x[-1])}))
     }
-    if (dim(plist[[i]])[1]!=1) isConstant <- c(isConstant,
-                                               apply(plist[[i]],2,function(x){all(x[1]==x[-1])}))
+    pmat <- do.call(cbind,plist)
+    cnams <- colnames(pmat)
+    colnames(pmat) <- get_p_types(cnams)
+    pmat[,] <- model()$Ntransform(pmat)[,1:length(cnams)]
+
+    if(add_recalculated) extras <- add_recalculated_pars(pmat, model, cnams)
+    colnames(pmat) <- cnams
+    if(add_recalculated) pmat <- cbind(pmat, extras)
+    is_constant <- apply(pmat,2,function(x){all(x[1]==x[-1])})
+    if(!include_constants){
+      pmat <- pmat[,!is_constant, drop = F]
+    }
+    if(k == 1){
+      out <- array(0, dim = c(ncol(pmat), ncol(mcmc_array), dim(mcmc_array)[3]))
+      rownames(out) <- colnames(pmat)
+      colnames(out) <- colnames(mcmc_array)
+    }
+    out[,k,] <- t(pmat)
   }
-  pmat <- do.call(cbind,plist)
-  cnams <- dimnames(pmat)[[2]]
-  dimnames(pmat)[[2]] <- get_p_types(cnams)
-  out <- model()$Ntransform(pmat,use=attr(design$dynamic,"transform_names"))[,1:length(cnams)]
-  dimnames(out)[[2]] <- cnams
-  isConstant[is.na(isConstant)] <- TRUE
-  if(!include_constants) out <- out[,!isConstant]
-  out <- as.mcmc(out)
-  attr(out,"isConstant") <- isConstant
-  out
+  if(is_matrix){
+    out <- out[,1,]
+  }
+  attr(out,"isConstant") <- is_constant
+  return(out)
 }
 
-add_constants_mcmc <- function(p,constants){
-  return(mcmc(add_constants(p,constants)))
-}
+
+
+
+

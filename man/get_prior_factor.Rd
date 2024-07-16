@@ -9,9 +9,8 @@ get_prior_factor(
   n_pars = NULL,
   sample = TRUE,
   N = 1e+05,
-  type = "mu",
+  selection = "mu",
   design = NULL,
-  map = FALSE,
   n_factors = 5
 )
 }
@@ -28,16 +27,9 @@ will be used to determine the size of prior.}
 
 \item{N}{How many samples to draw from the prior, the default is 1e5}
 
-\item{type}{Character. If \code{sample = TRUE}, what priors to sample from. Options:
-\code{"mu"}, \code{"variance"}, \code{"covariance"}, \code{"full_var"}, \code{"alpha"}, \code{"loadings"}.}
+\item{selection}{Character. If \code{sample = TRUE}, what priors to sample from.}
 
-\item{design}{The design obtained from \code{make_design()}, required when \code{map = TRUE}}
-
-\item{map}{Boolean, defaults to \code{TRUE}. If \code{sample = TRUE}, the implied prior is sampled.
-This includes back-transformations for naturally bounded parameters such as
-the non-decision time and an inverse mapping from the design matrix back to the
-cells of the design. If \code{FALSE}, the transformed, unmapped, parameters are used.
-Note that \code{map} does not affect the prior used in the sampling process.}
+\item{design}{The design obtained from \code{design()}, required when \code{map = TRUE}}
 
 \item{n_factors}{Integer. The number of factors.}
 }
@@ -61,12 +53,12 @@ which is only used for computational efficiency
 \examples{
 \dontrun{
 # First define a design for the model
-design_DDMaE <- make_design(data = forstmann,model=DDM,
+design_DDMaE <- design(data = forstmann,model=DDM,
                            formula =list(v~0+S,a~E, t0~1, s~1, Z~1, sv~1, SZ~1),
                            constants=c(s=log(1)))
 # Now get the default prior
 prior <- get_prior_factor(design = design_DDMaE, sample = FALSE)
-# We can change values in the default prior or use make_prior
+# We can change values in the default prior or use `prior`
 # Then we can get samples from this prior e.g.
 samples <- get_prior_factor(prior = prior, design = design_DDMaE,
   sample = TRUE, type = "mu", n_factors = 3)

@@ -47,12 +47,12 @@ pDDM <- function(rt,R,pars,precision=2.5)
 #'
 #' Model file to estimate the Diffusion Decision Model (DDM) in EMC2.
 #'
-#' Model files are almost exclusively used in `make_design()`.
+#' Model files are almost exclusively used in `design()`.
 #'
 #' @details
 #'
 #' Default values are used for all parameters that are not explicitly listed in the `formula`
-#' argument of `make_design()`.They can also be accessed with `DDM()$p_types`.
+#' argument of `design()`.They can also be accessed with `DDM()$p_types`.
 #'
 #' | **Parameter** | **Transform** | **Natural scale** | **Default**   | **Mapping**                    | **Interpretation**                                            |
 #' |-----------|-----------|---------------|-----------|----------------------------|-----------------------------------------------------------|
@@ -80,7 +80,7 @@ pDDM <- function(rt,R,pars,precision=2.5)
 #'
 #' @return A model list with all the necessary functions for EMC2 to sample
 #' @examples
-#' design_DDMaE <- make_design(data = forstmann,model=DDM,
+#' design_DDMaE <- design(data = forstmann,model=DDM,
 #'                            formula =list(v~0+S,a~E, t0~1, s~1, Z~1, sv~1, SZ~1),
 #'                            constants=c(s=log(1)))
 #' # For all parameters that are not defined in the formula, default values are assumed
@@ -109,17 +109,11 @@ DDM <- function(){
     #   0 < DP < 1: rtdists d = t0(upper)-t0(lower) = (2*DP-1)*t0  #
     #
     # Transform to natural scale
-    Ntransform=function(x,use=NULL) {
-      lognames <- c("a","sv","t0","st0","s")
-      probitnames <- c("Z","SZ","DP")
-      if (!is.null(use)) {
-        lognames <- lognames[lognames %in% use]
-        probitnames <- probitnames[lognames %in% use]
-      }
-      islog <- dimnames(x)[[2]] %in% lognames
-      isprobit <- dimnames(x)[[2]] %in% probitnames
-      if (any(islog)) x[,islog] <- exp(x[,islog])
-      if (any(isprobit)) x[,isprobit] <- pnorm(x[,isprobit])
+    Ntransform=function(x) {
+      islog <- dimnames(x)[[2]] %in% c("a","sv","t0","st0","s")
+      isprobit <- dimnames(x)[[2]] %in% c("Z","SZ","DP")
+      x[,islog] <- exp(x[,islog])
+      x[,isprobit] <- pnorm(x[,isprobit])
       x
     },
     # Trial dependent parameter transform

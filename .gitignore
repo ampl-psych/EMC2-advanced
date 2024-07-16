@@ -1,6 +1,7 @@
 .Rproj.user
 *.Rhistory
 .Rhistory
+test_fMRI.R
 .RData
 test.R
 *.so
@@ -8,4 +9,3 @@ test.R
 *.RData
 *.pdf
 .DS_Store
-.Rproj

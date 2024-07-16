@@ -7,17 +7,17 @@
 make_random_effects(
   design,
   group_means,
-  n_subj,
+  n_subj = NULL,
   variance_proportion = 0.2,
   covariances = NULL
 )
 }
 \arguments{
-\item{design}{A design list. The design as specified by \code{make_design()}}
+\item{design}{A design list. The design as specified by \code{design()}}
 
 \item{group_means}{A numeric vector. The group level means for each parameter, in the same order as \code{sampled_p_vector(design)}}
 
-\item{n_subj}{An integer. The number of subjects to generate parameters for.}
+\item{n_subj}{An integer. The number of subjects to generate parameters for. If \code{NULL} will be inferred from design}
 
 \item{variance_proportion}{A double. Optional. If \code{covariances} are not specified, the variances will be created by multiplying the means by this number. The covariances will be 0.}
 
@@ -31,7 +31,7 @@ Simulates subject-level parameters in the format required by \code{make_data()}.
 }
 \examples{
 # First create a design
-design_DDMaE <- make_design(data = forstmann,model=DDM,
+design_DDMaE <- design(data = forstmann,model=DDM,
                             formula =list(v~0+S,a~E, t0~1, s~1, Z~1, sv~1, SZ~1),
                             constants=c(s=log(1)))
 # Then create a group-level means vector:

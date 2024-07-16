@@ -5,22 +5,23 @@
 \title{Simulate data}
 \usage{
 make_data(
-  p_vector,
-  design,
+  parameters,
+  design = NULL,
   n_trials = NULL,
   data = NULL,
   expand = 1,
   mapped_p = FALSE,
+  hyper = FALSE,
   ...
 )
 }
 \arguments{
-\item{p_vector}{parameter vector used to simulate data.
+\item{parameters}{parameter vector used to simulate data.
 Can also be a matrix with one row per subject (with corresponding row names)
-or a list of tables produced by \code{plot_pars}
-(in which case posterior medians are used to simulate data)}
+or an emc object with sampled parameters
+(in which case posterior medians of \code{alpha} are used to simulate data)}
 
-\item{design}{Design list created by \code{make_design()}}
+\item{design}{Design list created by \code{design()}}
 
 \item{n_trials}{Integer. If \code{data} is not supplied, number of trials to create per design cell}
 
@@ -29,10 +30,12 @@ or a list of tables produced by \code{plot_pars}
 \item{expand}{Integer. Replicates the \code{data} (if supplied) expand times to increase number of trials per cell.}
 
 \item{mapped_p}{If \code{TRUE} instead returns a data frame with one row per design
-cell and columns for each parameter specifying how they are mapped to the}
+cell and columns for each parameter specifying how they are mapped to the design cells.}
 
-\item{...}{Additional optional arguments
-design cells.}
+\item{hyper}{If \code{TRUE} the supplied parameters must be a set of samples, from which the group-level will be used to generate subject level parameters.
+See also \code{make_random_effects} to generate subject-level parameters from a hyper distribution.}
+
+\item{...}{Additional optional arguments}
 }
 \value{
 A data frame with simulated data
@@ -52,25 +55,25 @@ To create data for multiple subjects see \code{?make_random_effects()}.
 }
 \examples{
 # First create a design
-design_DDMaE <- make_design(factors = list(S = c("left", "right"),
+design_DDMaE <- design(factors = list(S = c("left", "right"),
                                            E = c("SPD", "ACC"),
                                            subjects = 1:30),
                             Rlevels = c("left", "right"), model = DDM,
                             formula =list(v~0+S,a~E, t0~1, s~1, Z~1, sv~1, SZ~1),
                             constants=c(s=log(1)))
 # Then create a p_vector:
-p_vector <- c(v_Sleft=-2,v_Sright=2,a=log(1),a_EACC=log(2), t0=log(.2),
+parameters <- c(v_Sleft=-2,v_Sright=2,a=log(1),a_EACC=log(2), t0=log(.2),
               Z=qnorm(.5),sv=log(.5),SZ=qnorm(.5))
 
 # Now we can simulate data
-data <- make_data(p_vector, design_DDMaE, n_trials = 30)
+data <- make_data(parameters, design_DDMaE, n_trials = 30)
 
 # We can also simulate data based on a specific dataset
-design_DDMaE <- make_design(data = forstmann,model=DDM,
+design_DDMaE <- design(data = forstmann,model=DDM,
                             formula =list(v~0+S,a~E, t0~1, s~1, Z~1, sv~1, SZ~1),
                             constants=c(s=log(1)))
-p_vector <- c(v_Sleft=-2,v_Sright=2,a=log(1),a_Eneutral=log(1.5),a_Eaccuracy=log(2),
+parameters <- c(v_Sleft=-2,v_Sright=2,a=log(1),a_Eneutral=log(1.5),a_Eaccuracy=log(2),
               t0=log(.2),Z=qnorm(.5),sv=log(.5),SZ=qnorm(.5))
 
-data <- make_data(p_vector, design_DDMaE, data = forstmann)
+data <- make_data(parameters, design_DDMaE, data = forstmann)
 }

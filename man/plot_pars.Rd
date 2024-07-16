@@ -5,99 +5,63 @@
 \title{Plots density for parameters}
 \usage{
 plot_pars(
-  samplers,
-  layout = c(2, 3),
-  use_par = NULL,
+  emc,
+  layout = NA,
   selection = "mu",
-  filter = "sample",
-  thin = 1,
-  subfilter = 0,
-  mapped = FALSE,
-  plot_prior = TRUE,
-  xlim = NULL,
-  ylim = NULL,
-  prior_xlim = c(0.1, 0.9),
   show_chains = FALSE,
-  do_plot = TRUE,
-  subject = NA,
-  add_means = FALSE,
-  pars = NULL,
-  probs = c(0.025, 0.5, 0.975),
-  bw = "nrd0",
-  adjust = 1,
+  plot_prior = TRUE,
+  N = 10000,
+  use_prior_lim = !all_subjects,
   lpos = "topright",
-  digits = 3
+  true_pars = NULL,
+  all_subjects = FALSE,
+  prior_plot_args = list(),
+  true_plot_args = list(),
+  ...
 )
 }
 \arguments{
-\item{samplers}{An EMC2 samplers object.}
+\item{emc}{An emc object}
 
-\item{layout}{A vector specifying the layout as in \code{par(mfrow = layout)}.
-If \code{NA} or \code{NULL}, the current plot layout is used.}
+\item{layout}{A vector indicating which layout to use as in par(mfrow = layout). If NA, will automatically generate an appropriate layout.}
 
-\item{use_par}{Character vector of names of parameters to plot. The default \code{NULL}
-plots all}
-
-\item{selection}{A Character string. Indicates which parameter type to plot
-(\code{alpha}, \code{mu}, \code{variance}, \code{covariance}, or \code{correlation}).}
-
-\item{filter}{A string. Specifies from which stage you want to plot the densities (\code{preburn}, \code{burn}, \code{adapt}, \code{sample})}
-
-\item{thin}{An integer. Will keep only iterations of the MCMC chains that are a multiple of \code{thin}.}
-
-\item{subfilter}{Integer or numeric vector. If an integer is supplied, iterations
-up until that integer within the sampling stage \code{filter} are kept. If a vector is supplied, the iterations
-within the range are kept.}
-
-\item{mapped}{Boolean. If \code{TRUE}, plots the parameters mapped back to experimental design
-otherwise plots the sampled parameters.}
-
-\item{plot_prior}{Boolean. If \code{TRUE} will overlay prior density in the plot (in red)}
-
-\item{xlim}{x-axis plot limit. If a vector is supplied, will use the same axes for all.
-taken from the x limits of the density estimate of the posterior.}
-
-\item{ylim}{y-axis plot limit. If a vector is supplied, will use the same axes for all.
-zero to the maximum of the density estimate of the posterior.}
-
-\item{prior_xlim}{A vector giving upper and lower quantiles of the prior when choosing
-xlim if \code{plot_prior = TRUE}. If set to \code{NULL}, xlim is used instead.}
+\item{selection}{A Character string. Indicates which parameter type to use (e.g., \code{alpha}, \code{mu}, \code{sigma2}, \code{correlation}).}
 
 \item{show_chains}{Boolean (defaults to \code{FALSE}) plots a separate density for each chain.}
 
-\item{do_plot}{Boolean. Set to \code{FALSE} to only return the parameter credible intervals and omit the plots.}
+\item{plot_prior}{Boolean. If \code{TRUE} will overlay prior density in the plot (default in red)}
 
-\item{subject}{Integer or character vector. Only applicable if \code{selection = "alpha"}. Will plot only these subject(s).
-\code{NA} (default) will plot all.}
+\item{N}{Integer. How many prior samples to draw}
 
-\item{add_means}{Boolean. Whether to add parameter means as an attribute
-to return invisibly}
+\item{use_prior_lim}{Boolean. If \code{TRUE} will use xlimits based on prior density, otherwise based on posterior density.}
 
-\item{pars}{Named vector or matrix of known/simulated parameters, or the output of
-\code{plot_pars}, in which case the posterior medians are extracted. If \code{xlim} is not supplied,}
+\item{lpos}{Character. Where to plot the contraction statistic.}
 
-\item{probs}{Vector. The quantiles of the selected parameters to return invisibly.}
+\item{true_pars}{A vector or emc object. Can be used to visualize recovery.
+If a vector will plot a vertical line for each parameter at the appropriate place.
+If an emc object will plot the densities of the object as well, assumed to be the data-generating posteriors.}
 
-\item{bw}{number or string bandwidth for density (default \code{nrd0}). See \code{?density()}.}
+\item{all_subjects}{Boolean. Will plot the densities of all (selected) subjects overlaid with the group-level distribution}
 
-\item{adjust}{Numeric. Density function bandwidth adjustment parameter. See \code{?density()}.}
+\item{prior_plot_args}{A list. Optional additional arguments to be passed to plot.default for the plotting of the prior density (see \code{par()})}
 
-\item{lpos}{Character. Position of the contraction in the plot}
+\item{true_plot_args}{A list. Optional additional arguments to be passed to plot.default for the plotting of the true parameters (see \code{par()})}
 
-\item{digits}{Integer. Rounding of contraction}
+\item{...}{Optional arguments that can be passed to \code{get_pars}, \code{density}, or \code{plot.default} (see \code{par()})}
 }
 \value{
-invisibly return quantiles for the selected parameters
+An invisible return of the contraction statistics for the selected parameter type
 }
 \description{
 Plots the posterior and prior density for selected parameters of a model.
+Full range of samples manipulations described in \code{get_pars}.
 }
 \examples{
-\dontrun{
-# For a set of samplers plot prior and posterior densities:
-plot_pars(samplers)
-# Or just get the quantiles and omit the plot
-quants <- plot_pars(samplers, selection = "variance", do_plot = FALSE)
-print(quants)
-}
+# Full range of possibilities described in get_pars
+plot_pars(samples_LNR)
+# Or plot all subjects
+plot_pars(samples_LNR, all_subjects = TRUE, col = 'purple')
+# Or plot recovery
+true_emc <- samples_LNR # This would normally be the data-generating samples
+plot_pars(samples_LNR, true_pars = true_emc, true_plot_args = list(col = 'blue'), adjust = 2)
 }

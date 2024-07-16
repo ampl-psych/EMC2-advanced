@@ -25,6 +25,7 @@ Description: Fit Bayesian (hierarchical) cognitive models
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
 Suggests: 
     testthat (>= 3.0.0),
     vdiffr
@@ -51,12 +52,10 @@ Imports:
     colorspace,
     psych,
     utils,
-    lpSolve,
-    tmvtnorm
+    lpSolve
 LinkingTo: 
     Rcpp
 Depends: 
     R (>= 2.10)
 LazyData: true
 Config/testthat/parallel: true
-RoxygenNote: 7.3.2

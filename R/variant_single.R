@@ -25,17 +25,17 @@ add_info_single <- function(sampler, prior = NULL, ...){
 #' cells of the design. If `FALSE`, the transformed, unmapped, parameters are used.
 #' Note that `map` does not affect the prior used in the sampling process.
 #' @param N How many samples to draw from the prior, the default is 1e5
-#' @param design The design obtained from `make_design()`, required when `map = TRUE`
-#' @param type  Character. If `sample = TRUE`, what prior to sample from. Options: `"alpha"`.
+#' @param design The design obtained from `design()`, required when `map = TRUE`
+#' @param selection  Character. If `sample = TRUE`, what prior to sample from. Options: `"alpha"`.
 #' @return A list with a single entry named `"alpha"` and samples from the prior (if `sample = TRUE`) or else a prior object
 #' @examples \dontrun{
 #' # First define a design for the model
-#' design_DDMaE <- make_design(data = forstmann,model=DDM,
+#' design_DDMaE <- design(data = forstmann,model=DDM,
 #'                            formula =list(v~0+S,a~E, t0~1, s~1, Z~1, sv~1, SZ~1),
 #'                            constants=c(s=log(1)))
 #' # Now get the default prior
 #' prior <- get_prior_single(design = design_DDMaE, sample = FALSE)
-#' # We can change values in the default prior or use make_prior
+#' # We can change values in the default prior or use `prior`
 #' # Then we can get samples from this prior e.g.
 #' samples <- get_prior_single(prior = prior, design = design_DDMaE,
 #'   sample = TRUE, type = "alpha")
@@ -43,31 +43,33 @@ add_info_single <- function(sampler, prior = NULL, ...){
 #' @export
 
 get_prior_single <- function(prior = NULL, n_pars = NULL, sample = TRUE, N = 1e5,
-                             type = "alpha", design = NULL, map = FALSE){
+                             selection = "alpha", design = NULL, map = FALSE){
   if(is.null(prior)){
     prior <- list()
   }
   if(!is.null(design)){
-    n_pars <- length(attr(design, "p_vector"))
+    n_pars <- length(sampled_p_vector(design, doMap = F))
   }
   if (!is.null(prior$theta_mu_mean)) {
     n_pars <- length(prior$theta_mu_mean)
   }
   if (is.null(prior$theta_mu_mean)) {
-    prior$theta_mu_mean <- setNames(rep(0, n_pars),names(attr(design, "p_vector")))
+    prior$theta_mu_mean <- setNames(rep(0, n_pars),names(sampled_p_vector(design, doMap = F)))
   }
   if(is.null(prior$theta_mu_var)){
     prior$theta_mu_var <- diag(rep(1, n_pars))
   }
+  attr(prior, "type") <- "single"
+  out <- prior
   if(sample){
-    if(type != "alpha") stop("for variant single, only alpha can be specified")
-    samples <- mvtnorm::rmvnorm(N, prior$theta_mu_mean, prior$theta_mu_var)
-    if (map) {
-      samples <- map_mcmc(samples,design,design$model,include_constants=FALSE)
-    }
-    return(list(alpha = samples))
+    out <- list()
+    par_names <- names(sampled_p_vector(design, doMap = F))
+    if(selection != "alpha") stop("for variant single, only alpha can be specified")
+    out$alpha <- t(mvtnorm::rmvnorm(N, prior$theta_mu_mean, prior$theta_mu_var))
+    out$alpha <- array(out$alpha, dim = c(length(par_names), 1, N))
+    rownames(out$alpha) <- par_names
   }
-  return(prior)
+  return(out)
 }
 
 get_startpoints_single <- function(pmwgs, start_mu, start_var){
@@ -169,3 +171,7 @@ bridge_group_and_prior_and_jac_single <- function(proposals_group, proposals_lis
   return(rowSums(prior_mu)) # Output is of length n_iter
 }
 
+group__IC_single <- function(emc, stage="sample",filter=0){
+  return(list(mean_ll = NULL, Dmean = NULL,
+              minD = NULL))
+}

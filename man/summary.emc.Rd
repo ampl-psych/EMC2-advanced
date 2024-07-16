@@ -2,14 +2,12 @@
 % Please edit documentation in R/s3_funcs.R
 \name{summary.emc}
 \alias{summary.emc}
-\title{Summary statistics for EMC2 samplers objects}
+\title{Summary statistics for emc objects}
 \usage{
 \method{summary}{emc}(
   object,
-  selection = c("mu", "variance", "correlation"),
+  selection = c("mu", "sigma2", "alpha"),
   probs = c(0.025, 0.5, 0.975),
-  filter = "sample",
-  subfilter = 0,
   digits = 3,
   ...
 )
@@ -17,21 +15,14 @@
 \arguments{
 \item{object}{An object of class \code{emc}}
 
-\item{selection}{A character string indicating the parameter group.
-Defaults to \code{mu}, \code{variance}, and \code{correlation}. Other options are \code{covariance}, and \code{alpha}
-(i.e., individual-level parameters). See below for more information.}
+\item{selection}{A character string indicating the parameter type
+Defaults to \code{mu}, \code{sigma2}, and \code{alpha}. See below for more information.}
 
 \item{probs}{The quantiles to be computed. Defaults to the the 2.5\%, 50\% and 97.5\% quantiles.}
 
-\item{filter}{A character string indicating the sampling stage to be summarized.
-Can be \code{preburn}, \code{burn}, \code{adapt}, or \code{sample}.}
-
-\item{subfilter}{An integer or vector, defaults to 0. See below
-for more details.}
-
 \item{digits}{An integer specifying rounding of output.}
 
-\item{...}{Further optional arguments.}
+\item{...}{Optional arguments that can be passed to \code{get_pars}}
 }
 \value{
 A list of summary output.
@@ -40,12 +31,8 @@ A list of summary output.
 Computes quantiles, \code{Rhat} and \code{ESS} for selected model parameters.
 }
 \details{
-Note that if \code{selection = alpha} is used, summary statistics are computed
-at the individual level. Only the first subject's summary output is printed
+Note that if \code{selection = alpha} and \code{by_subject = TRUE} (default)
+is used, summary statistics are computed at the individual level.
 to the console but summary statistics for all subjects are returned by the
 function.
-
-If \code{subfilter} is set to an integer other than 0 (i.e., the default), all iterations
-up to that integer are ignored. If a vector is supplied, only those iterations
-are considered.
 }

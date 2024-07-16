@@ -8,13 +8,11 @@ plot_defective_density(
   data,
   subject = NULL,
   factors = NULL,
-  layout = NULL,
-  xlim = NULL,
-  bw = "nrd0",
-  adjust = 1,
+  layout = NA,
   correct_fun = NULL,
-  rt = "top",
-  accuracy = "topright"
+  rt_pos = "top",
+  accuracy = "topright",
+  ...
 )
 }
 \arguments{
@@ -29,21 +27,16 @@ are plotted.}
 \item{factors}{A character vector of the factor names in the design to aggregate across
 Defaults to all (i.e., \code{NULL}).}
 
-\item{layout}{A vector specifying the layout as in \code{par(mfrow = layout)}.
-The default \code{NULL} uses the current layout.}
-
-\item{xlim}{x-axis limit for all cells (default NULL will scale each plot such that the xlimits encompass the densities).}
-
-\item{bw}{number or string bandwidth for density (defaults to \code{nrd0}). See \code{?density()}.}
-
-\item{adjust}{Numeric. Density function bandwidth adjustment parameter. See \code{?density()}.}
+\item{layout}{A vector indicating which layout to use as in par(mfrow = layout). If NA, will automatically generate an appropriate layout.}
 
 \item{correct_fun}{If specified, the accuracy for each subject is calculated, using the supplied function and
 an accuracy vector for each subject is returned invisibly.}
 
-\item{rt}{legend function position character string for the mean response time (defaults to \code{top})}
+\item{rt_pos}{legend function position character string for the mean response time (defaults to \code{top})}
 
 \item{accuracy}{legend function position character string for accuracy (defaults to \code{topright})}
+
+\item{...}{Optional arguments that can be passed to \code{get_pars}, \code{density}, or \code{plot.default} (see \code{par()})}
 }
 \value{
 If \code{correct_fun} is specified, a subject accuracy vector is returned invisibly
