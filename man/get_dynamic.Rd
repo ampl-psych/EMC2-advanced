@@ -6,7 +6,7 @@
 \usage{
 get_dynamic(
   pname,
-  p,
+  p_vector,
   data,
   design,
   return_dadm = FALSE,
@@ -17,7 +17,7 @@ get_dynamic(
 \arguments{
 \item{pname}{parameter to provide results for}
 
-\item{p}{parameter vector}
+\item{p_vector}{parameter vector}
 
 \item{data}{data frame providing covariate(s)}
 

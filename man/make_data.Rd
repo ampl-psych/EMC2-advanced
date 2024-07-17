@@ -5,16 +5,22 @@
 \title{Simulate data}
 \usage{
 make_data(
-  p_vector,
-  design,
+  parameters,
+  design = NULL,
   n_trials = NULL,
   data = NULL,
   expand = 1,
   mapped_p = FALSE,
+  hyper = FALSE,
   ...
 )
 }
 \arguments{
+\item{parameters}{parameter vector used to simulate data.
+Can also be a matrix with one row per subject (with corresponding row names)
+or an emc object with sampled parameters
+(in which case posterior medians of \code{alpha} are used to simulate data)}
+
 \item{design}{Design list created by \code{design()}}
 
 \item{n_trials}{Integer. If \code{data} is not supplied, number of trials to create per design cell}
@@ -26,15 +32,10 @@ make_data(
 \item{mapped_p}{If \code{TRUE} instead returns a data frame with one row per design
 cell and columns for each parameter specifying how they are mapped to the design cells.}
 
-\item{...}{Additional optional arguments}
-
-\item{parameters}{parameter vector used to simulate data.
-Can also be a matrix with one row per subject (with corresponding row names)
-or an emc object with sampled parameters
-(in which case posterior medians of \code{alpha} are used to simulate data)}
-
 \item{hyper}{If \code{TRUE} the supplied parameters must be a set of samples, from which the group-level will be used to generate subject level parameters.
 See also \code{make_random_effects} to generate subject-level parameters from a hyper distribution.}
+
+\item{...}{Additional optional arguments}
 }
 \value{
 A data frame with simulated data
