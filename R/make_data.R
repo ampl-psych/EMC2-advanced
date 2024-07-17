@@ -7,11 +7,12 @@
 #' @param UT upper truncation bound above which data are removed (scalar or subject named vector)
 #' @param LC lower censoring bound (scalar or subject named vector)
 #' @param UC upper censoring bound (scalar or subject named vector)
-#' @param LCresponse Boolean, default TRUE, if false set LC response to NA
-#' @param UCresponse Boolean, default TRUE, if false set UC response to NA
-#' @param LCdirection Boolean, default TRUE, set LC rt to 0, else to NA
-#' @param UCdirection Boolean, default TRUE, set LC rt to Inf, else to NA
-#'
+#' @param LCresponse logical, default TRUE, if false set LC response to NA
+#' @param UCresponse logical, default TRUE, if false set UC response to NA
+#' @param LCdirection logical, default TRUE, set LC rt to 0, else to NA
+#' @param UCdirection logical, default TRUE, set LC rt to Inf, else to NA
+#' @param pc probability of contamination
+#' @param verbose logical, default TRUE, report propotion of data truncated.
 #' @return Truncated and censored data frame
 #' @export
 
