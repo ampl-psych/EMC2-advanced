@@ -439,7 +439,7 @@ check_adaptive <- function(adaptive,formula=NULL) {
 #' kernel for trend models
 #'
 #' @param pname parameter to provide results for
-#' @param p parameter vector
+#' @param p_vector parameter vector
 #' @param data data frame providing covariate(s)
 #' @param design design with dynamic RL component
 #' @param return_dadm return full dadm (accumulators) otherwise just trials
@@ -448,23 +448,23 @@ check_adaptive <- function(adaptive,formula=NULL) {
 #'
 #' @return dadm/data q values, prediction errors etc. (etc. depends on RL model dyntype)
 #' @export
-get_dynamic <- function(pname,p,data,design,return_dadm=FALSE,return_p=FALSE,compress=FALSE)
+get_dynamic <- function(pname,p_vector,data,design,return_dadm=FALSE,return_p=FALSE,compress=FALSE)
 {
-  if (!pname %in% names(p)) stop("pname must be a name in p")
+  if (!pname %in% names(p_vector)) stop("pname must be a name in p")
   dadm <- design_model(data,design,compress=compress,verbose=FALSE)
-  if (!all(sort(names(add_constants(p,attributes(dadm)$constants)))==sort(attr(dadm,"p_names"))))
-    stop("p names must be: ",paste(attr(dadm,"p_names"),collapse=", "))
+  if (!all(sort(names(add_constants(p_vector,attributes(dadm)$constants)))==sort(attr(dadm,"p_names"))))
+    stop("p_vector names must be: ",paste(attr(dadm,"p_names"),collapse=", "))
   if (is.null(attr(dadm,"dynamic"))) stop("design must be dynamic")
   if (!(pname %in% names(attr(dadm,"dynamic")))) stop(pname," is not dynamic")
-  p <- add_constants(p,attributes(dadm)$constants)
+  p_vector <- add_constants(p_vector,attributes(dadm)$constants)
   dyntype <- attr(dadm,"dynamic")[[pname]]$dyntype
   dpnames <- attr(dadm,"dynamic")[[pname]]$dpnames
   covnames <- attr(dadm,"dynamic")[[pname]]$covnames
   if (!return_p & any(covnames=="winner")) return_dadm <- FALSE
   lR <- attr(dadm,"dynamic")[[pname]]$lR
   maptype <- attr(dadm,"dynamic")[[pname]]$maptype
-  pm <- p[pname]
-  dp <- p[dpnames]
+  pm <- p_vector[pname]
+  dp <- p_vector[dpnames]
   kernel <- dynfuns(pm,dp,dyntype,dadm[,c("lR",covnames),drop=FALSE],
                     lR,maptype,return_extras=!return_p)
   if (length(dim(kernel))!=3) {
@@ -477,7 +477,9 @@ get_dynamic <- function(pname,p,data,design,return_dadm=FALSE,return_p=FALSE,com
     }
     if (return_p) dimnames(out)[[2]][length(dimnames(out)[[2]])] <- pname
     return(out)
-  } else kernel
+  } else {
+    return(kernel)
+  }
 }
 
 
@@ -504,7 +506,7 @@ get_adaptive <- function(pname,p_vector,data,design,return_dadm=TRUE,return_p=TR
   if (!(pname %in% names(attr(dadm,"adaptive")))) stop(pname," is not adaptive")
   model <- attributes(dadm)$model
   p <- model()$Ttransform(model()$Ntransform(map_p(
-    model()$transform(add_constants(p_vector,design$constants)),dadm
+    design$model()$transform(add_constants(p_vector,design$constants)),dadm
   ),attr(design,"transform_names")),dadm)
   covnames <- attr(dadm,"adaptive")[[pname]]$covnames
   isRL <- any(covnames=="winner")
