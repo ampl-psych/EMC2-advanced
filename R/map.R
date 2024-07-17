@@ -170,7 +170,7 @@ mapped_par <- function(p_vector,design,model=NULL,
     message("Advantage model: added column lA for accumulators within lR")
     ok <- c(ok,TRUE)
   } else adadm <- dadm
-  pars <- get_pars(p_vector,dadm)
+  pars <- get_pars_matrix(p_vector,dadm)
   out <- cbind(adadm[,ok],round(pars[,!dimnames(pars)[[2]]=="SSD"],digits))
   out <- out[,!(names(out) %in% c("LI","staircase"))]  # stop signal models  if (model()$type=="SDT")  out <- out[adadm$lR!=levels(adadm$lR)[length(levels(dadm$lR))],]
   if (model()$type=="DDM")  out <- out[,!(names(out) %in% c("lR","lM"))]
