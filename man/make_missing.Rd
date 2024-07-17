@@ -13,7 +13,9 @@ make_missing(
   LCresponse = TRUE,
   UCresponse = TRUE,
   LCdirection = TRUE,
-  UCdirection = TRUE
+  UCdirection = TRUE,
+  pc = NULL,
+  verbose = TRUE
 )
 }
 \arguments{
