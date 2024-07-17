@@ -170,7 +170,7 @@ mapped_par <- function(p_vector,design,model=NULL,
     message("Advantage model: added column lA for accumulators within lR")
     ok <- c(ok,TRUE)
   } else adadm <- dadm
-  out <- cbind(adadm[,ok],round(get_pars(p_vector,dadm),digits))
+  out <- cbind(adadm[,ok],round(get_pars_matrix(p_vector,dadm),digits))
   if (model()$type=="SDT")  out <- out[adadm$lR!=levels(adadm$lR)[length(levels(dadm$lR))],]
   if (model()$type=="DDM")  out <- out[,!(names(out) %in% c("lR","lM"))]
   if (any(names(out)=="RACE") && remove_RACE)

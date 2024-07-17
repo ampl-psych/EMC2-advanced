@@ -3,7 +3,7 @@ log_likelihood_race_advantage <- function(p_vector,dadm,min_ll=log(1e-10))
   # Race model summed log likelihood
 {
 
-  pars <- get_pars(p_vector,dadm)
+  pars <- get_pars_matrix(p_vector,dadm)
 
   nr <- length(levels(dadm$R))
   na <- nr-1
@@ -46,7 +46,7 @@ log_likelihood_race_advantage <- function(p_vector,dadm,min_ll=log(1e-10))
 log_likelihood_race_trdm <- function(p_vector,dadm,min_ll=log(1e-10))
   # TRDM model summed log likelihood
 {
-  pars <- get_pars(p_vector,dadm)
+  pars <- get_pars_matrix(p_vector,dadm)
 
   if (is.null(attr(pars,"ok")))
     ok <- !logical(dim(pars)[1]) else ok <- attr(pars,"ok")
@@ -135,7 +135,7 @@ log_likelihood_ddm_missing <- function(p_vector,dadm,min_ll=log(1e-10))
     out
   }
 
-  pars <- get_pars(p_vector,dadm)
+  pars <- get_pars_matrix(p_vector,dadm)
   like <- numeric(dim(dadm)[1])
   if (any(attr(pars,"ok"))) {
     rt <- dadm$rt[attr(pars,"ok")]
@@ -275,7 +275,7 @@ log_likelihood_race_missing <- function(p_vector,dadm,min_ll=log(1e-10))
   # Race model summed log likelihood for models allowing missing values
 {
 
-  pars <- get_pars(p_vector,dadm)
+  pars <- get_pars_matrix(p_vector,dadm)
 
   if (any(names(dadm)=="RACE")) # Some accumulators not present
     pars[as.numeric(dadm$lR)>as.numeric(as.character(dadm$RACE)),] <- NA
@@ -552,7 +552,7 @@ log_likelihood_race_missing_LBAU <- function(p_vector,dadm,min_ll=log(1e-10))
   }
 
 
-  pars <- get_pars(p_vector,dadm)
+  pars <- get_pars_matrix(p_vector,dadm)
 
   if (any(names(dadm)=="RACE")) # Some accumulators not present
     pars[as.numeric(dadm$lR)>as.numeric(as.character(dadm$RACE)),] <- NA
@@ -791,7 +791,7 @@ log_likelihood_race_missing_LBAU <- function(p_vector,dadm,min_ll=log(1e-10))
 #   # attr(dadm,"dL")
 # {
 #
-#   pars <- get_pars(p_vector,dadm)
+#   pars <- get_pars_matrix(p_vector,dadm)
 #
 #   Dnams <- dimnames(pars)[[2]][substr(dimnames(pars)[[2]],1,2)=="DT"]
 #   tmats <- array(cbind(rep(0,dim(pars)[1]),pars[,c(Dnams,"b")]),dim=c(2,nrow(pars)/2,2+length(Dnams)),
@@ -831,7 +831,7 @@ log_likelihood_mt <- function(p_vector,dadm,min_ll=log(1e-10),n_cores=10)
     if (inherits(tmp,"try-error")) 0 else tmp
   }
 
-  pars <- get_pars(p_vector,dadm)
+  pars <- get_pars_matrix(p_vector,dadm)
 
   Dnams <- dimnames(pars)[[2]][substr(dimnames(pars)[[2]],1,2)=="DT"]
   tmats <- array(cbind(rep(0,dim(pars)[1]),pars[,c(Dnams,"b")]),dim=c(2,nrow(pars)/2,2+length(Dnams)),
@@ -879,7 +879,7 @@ log_likelihood_mt <- function(p_vector,dadm,min_ll=log(1e-10),n_cores=10)
 log_likelihood_race_ss <- function(p_vector,dadm,min_ll=log(1e-10))
 {
 
-  pars <- get_pars(p_vector,dadm)
+  pars <- get_pars_matrix(p_vector,dadm)
 
   # Set up indices:
   # "is" = logical, "isp" pars/dadm index, "t" trials index, "ist" logical on trial index
@@ -1039,7 +1039,7 @@ log_likelihood_race_ss_uv <- function(p_vector,dadm,min_ll=log(1e-10))
   # univalent responding, assumes go and stop-triggered in the same order and
   # same length.
 
-  pars <- get_pars(p_vector,dadm)
+  pars <- get_pars_matrix(p_vector,dadm)
 
   if (is.null(attr(pars,"ok")))
     ok <- !logical(dim(pars)[1]) else ok <- attr(pars,"ok")
