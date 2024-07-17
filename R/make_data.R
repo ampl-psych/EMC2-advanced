@@ -257,11 +257,12 @@ make_data <- function(parameters,design = NULL,n_trials=NULL,data=NULL,expand=1,
   } else {
     if (!is.null(dynamic_cv)) {
       Rrt <- dynamic_rfun(dynamic_cv,p_vector,data,design)
+    } else if (any(names(design$Ffunctions)=="staircase")) {
+      Rrt <- design$Ffunctions$staircase(data,pars=pars)
     } else Rrt <- model()$rfun(lR,pars)
   }
 
-  dropNames <- c("lR","lM","lSmagnitude",attr(data, "isRL"))
-
+  dropNames <- c("lR","lM","lSmagnitude",attr(data, "isRL"),"staircase","lI")
   if (!return_Ffunctions && !is.null(design$Ffunctions))
     dropNames <- c(dropNames,names(design$Ffunctions) )
   data <- data[data$lR==levels(data$lR)[1],!(names(data) %in% dropNames)]
@@ -288,7 +289,16 @@ make_data <- function(parameters,design = NULL,n_trials=NULL,data=NULL,expand=1,
   attr(data,"p_vector") <- p_vector
   if (!is.null(Rrt) && !is.null(attr(Rrt,"timer_wins")))
     attr(data,"timer_wins") <-  attr(Rrt,"timer_wins")
-  data
+  if (!is.null(remap)) {
+    if (length(remap)!=length(levels(data$R)))
+      stop("remap must have same length as response levels")
+    if (!all(sort(names(remap))==sort(levels(data$R))))
+      stop("remap does not specify all R levels")
+    data$R <- as.character(data$R)
+    for (i in names(remap)) data$R[data$R==i] <- remap[i]
+    data$R <- factor(data$R,levels=unique(remap))
+  }
+  return(data)
 }
 
 
