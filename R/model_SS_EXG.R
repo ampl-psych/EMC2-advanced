@@ -299,8 +299,8 @@ pstopEXG <- function(parstop,n_acc,upper=Inf,
                      gpars=c("mu","sigma","tau"),spars=c("muS","sigmaS","tauS"))
 {
   sindex <- seq(1,nrow(parstop),by=n_acc)
-  ps <- parstop[sindex,spars]
-  SSDs <- parstop[sindex,"SSD"]
+  ps <- parstop[sindex,spars,drop=FALSE]
+  SSDs <- parstop[sindex,"SSD",drop=FALSE]
   ntrials <- length(SSDs)
   if (length(upper)==1) upper <- rep(upper,length.out=ntrials)
   pgo <- array(parstop[,gpars],dim=c(n_acc,ntrials,length(gpars)),
