@@ -676,6 +676,8 @@ design_model <- function(data,design,model=NULL,
       stop("Model must be supplied if it has not been added to design")
     model <- design$model
   }
+
+  data$R <- factor(as.character(data$R),levels=design$Rlevels)
   if (model()$type=="SDT") rt_check <- FALSE
   if(model()$type == "MRI"){
     rt_check <- FALSE

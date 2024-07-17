@@ -37,6 +37,7 @@ plot_defective_density <- function(data,subject=NULL,factors=NULL,
                                    rt_pos="top",accuracy="topright",
                                    ...)
 {
+  if (any(names(data)=="SSD")) data$SSD <- is.finite(data$SSD)
   dots <- list(...)
   if (!is.null(subject)) {
     snams <- levels(data$subjects)
