@@ -53,7 +53,8 @@ Imports:
     psych,
     utils,
     lpSolve,
-    tmvtnorm
+    tmvtnorm,
+    MomTrunc
 LinkingTo: 
     Rcpp
 Depends: 
