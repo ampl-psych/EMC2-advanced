@@ -57,7 +57,7 @@ log_likelihood_race_trdm <- function(p_vector,dadm,min_ll=log(1e-10))
   pars <- pars[ok,]
   winner <- dadm$winner[ok]
   rt <- dadm$rt[ok]
-  # unbiased guess if all NA, otherwise if first accumulator NA use lR=2,lR=3...
+  # unbiased guess if all -Inf, otherwise if first accumulator NA use lR=2,lR=3...
   # to set guess probability, else should already be a set of probabilities per
   # accumulator (in which case the values are not being sampled).
   if (all(pars[,"pGuess"]==-Inf)) pars[,"pGuess"] <- rep(1/nr,nrow(pars)) else {
