@@ -401,6 +401,7 @@ TRDM <- function(){
                         ((pars[,"vT"] > 1e-3) | pars[,"vT"] == 0) &
                         ((pars[,"BT"] > 1e-3) | pars[,"BT"] == 0) &
                         ((pars[,"AT"] > 1e-6) | pars[,"AT"] == 0)
+      attr(pars,"ok")[is.na(attr(pars,"ok"))] <- FALSE
       pars
     },
     # Random function for racing accumulators
@@ -413,6 +414,7 @@ TRDM <- function(){
            ((pars[,"vT"] > 1e-3) | pars[,"vT"] == 0) &
            ((pars[,"BT"] > 1e-3) | pars[,"BT"] == 0) &
            ((pars[,"AT"] > 1e-6) | pars[,"AT"] == 0)
+      ok[is.na(ok)] <- FALSE
       if (is.null(lR)) ok else rTRDM(lR,pars,ok=ok)
     },
     # Density function (PDF) for single evidence accumulator
