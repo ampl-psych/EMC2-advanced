@@ -10,6 +10,7 @@ mapped_par(
   model = NULL,
   digits = 3,
   remove_subjects = TRUE,
+  covariates = NULL,
   ...
 )
 }
@@ -23,6 +24,8 @@ mapped_par(
 \item{digits}{Integer. Will round the output parameter values to this many decimals}
 
 \item{remove_subjects}{Boolean. Whether to include subjects as a factor in the design}
+
+\item{covariates}{Dataframe, can be included if specified in the design}
 
 \item{...}{optional arguments}
 }

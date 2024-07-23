@@ -280,27 +280,45 @@ check <- function(emc, ...){
 
 #' @rdname parameters
 #' @export
-parameters.emc <- function(emc,selection = "mu", N = 1000, ...)
+parameters.emc <- function(emc,selection = "mu", N = NULL, resample = FALSE, ...)
   # extracts and stacks chains into a matrix
 {
   dots <- list(...)
+
+  if(is.null(N) || resample){
+    nstage <- colSums(chain_n(emc))
+    has_ran <- nstage[nstage != 0]
+    if(!is.null(N)){
+      N_res <- N
+    } else{
+      N_res <- nstage[names(has_ran)[length(has_ran)]]
+    }
+    N <- nstage[names(has_ran)[length(has_ran)]]
+  }
   dots$merge_chains <- TRUE ; dots$return_mcmc <- FALSE
   dots$flatten <- TRUE; dots$length.out <- N/length(emc)
   out <- do.call(get_pars, c(list(emc,selection=selection), fix_dots(dots, get_pars)))
   if(selection == "alpha"){
     out <- aperm(out, c(3,1,2))
+    if(resample){
+      out <- apply(out, 2:3, sample, N_res, replace = T)
+    }
     out <- apply(out, 3, identity, simplify=FALSE)
     for(i in 1:length(out)){
       out[[i]] <- as.data.frame(out[[i]])
       out[[i]] <- cbind(names(out)[i], out[[i]])
       colnames(out[[i]])[1] <- "subjects"
-      out[[i]] <- out[[i]][1:N,]
+      if(!resample) out[[i]] <- out[[i]][1:N,]
     }
     out <- do.call(rbind, out)
     rownames(out) <- NULL
   } else{
     out <- as.data.frame(t(out))
-    out <- out[1:N,]
+    if(resample){
+      out <- apply(out, 2, sample, N_res, replace = T)
+    } else{
+      out <- out[1:N,]
+    }
   }
   out
 }
@@ -310,7 +328,8 @@ parameters.emc <- function(emc,selection = "mu", N = 1000, ...)
 #'
 #' @param emc An emc object
 #' @param selection String designating parameter type (e.g. mu, sigma2, correlation, alpha)
-#' @param N Integer. How many samples to take from the posterior.
+#' @param N Integer. How many samples to take from the posterior. If `NULL` will return the full posterior
+#' @param resample Boolean. If `TRUE` will sample N samples from the posterior with replacement
 #' @param ... Optional arguments that can be passed to `get_pars`
 #' @return A data frame with one row for each sample (with a subjects column if selection = "alpha")
 #' @export
@@ -318,10 +337,8 @@ parameters <- function(emc, ...){
   UseMethod("parameters")
 }
 
-
 #' @rdname fit
 #' @export
-
 fit.emc <- function(emc, stage = NULL, iter = 1000, stop_criteria = NULL,report_time=TRUE,
                     p_accept = .8, step_size = 100, verbose = TRUE, verboseProgress = FALSE, fileName = NULL,
                     particles = NULL, particle_factor=50, cores_per_chain = 1,
@@ -329,11 +346,10 @@ fit.emc <- function(emc, stage = NULL, iter = 1000, stop_criteria = NULL,report_
                     ...){
 
   if (report_time) start_time <- Sys.time()
-
-  if(!is.null(stop_criteria) & length(stop_criteria) == 1){
+  stages_names <- c("preburn", "burn", "adapt", "sample")
+  if(!is.null(stop_criteria) & !any(names(stop_criteria) %in% stages_names)){
     stop_criteria[["sample"]] <- stop_criteria
   }
-  stages_names <- c("preburn", "burn", "adapt", "sample")
   if(is.null(stop_criteria)){
     stop_criteria <- vector("list", length = 4)
     names(stop_criteria) <- stages_names
