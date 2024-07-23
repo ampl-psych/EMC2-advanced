@@ -185,6 +185,13 @@ design <- function(formula = NULL,factors = NULL,Rlevels = NULL,model,data=NULL,
   if (model()$type=="SDT") {
     contrasts[["lR"]] <- contr.increasing(length(Rlevels))
   }
+
+  if(any(names(functions)=="staircase")){ # for stop-signal models only
+    # make sure "SSD" is added as covariate so that compression also takes
+    # the stop-trials into account
+    covariates <- unique(c(covariates, "SSD"))
+  }
+
   design <- list(Flist=formula,Ffactors=factors,Rlevels=Rlevels,
                  Clist=contrasts,matchfun=matchfun,constants=constants,
                  Fcovariates=covariates,Ffunctions=functions,model=model,
