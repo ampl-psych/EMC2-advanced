@@ -140,11 +140,12 @@ double c_log_likelihood_race(NumericMatrix pars, DataFrame data,
   CharacterVector R = data["R"];
   NumericVector lds_exp(n_out);
   const int n_acc = unique(R).length();
-  if(sum(contains(data.names(), "NACC")) == 1){
+  if(sum(contains(data.names(), "RACE")) == 1){
     NumericVector lR = data["lR"];
-    NumericVector NACC = data["NACC"];
+    NumericVector NACC = data["RACE"];
+    CharacterVector vals_NACC = NACC.attr("levels");
     for(int x = 0; x < pars.nrow(); x++){
-      if(lR[x] > NACC[x]){
+      if(lR[x] > atoi(vals_NACC[NACC[x]-1])){
         pars(x,0) = NA_REAL;
       }
     }
@@ -153,8 +154,10 @@ double c_log_likelihood_race(NumericMatrix pars, DataFrame data,
   lds[winner] = win;
   if(n_acc > 1){
     NumericVector loss = log(1- pfun(rts, pars, !winner, exp(min_ll))); //cdfs
+    Rcout << loss;
+    Rcout << "\n \n";
     loss[is_na(loss)] = min_ll;
-    loss[loss == log(1 - exp(min_ll))] = min_ll;
+    // loss[loss == log(1 - exp(min_ll))] = min_ll;
     lds[!winner] = loss;
   }
   lds[is_na(lds)] = min_ll;
