@@ -160,6 +160,12 @@ mapped_par <- function(p_vector,design,model=NULL,
   stop("Must specify model as not in design") else model <- design$model
   if (remove_subjects) design$Ffactors$subjects <- design$Ffactors$subjects[1]
   if (!is.matrix(p_vector)) p_vector <- make_pmat(p_vector,design)
+  if(!is.null(Fcovariates)){
+    if(Fcovariates == "SSD"){
+      Fcovariates <- NULL
+    }
+  }
+
   dadm <- design_model(make_data(p_vector,design,n_trials=1,Fcovariates=Fcovariates),
                        design,model,rt_check=FALSE,compress=FALSE)
   ok <- !(names(dadm) %in% c("subjects","trials","R","rt","winner"))

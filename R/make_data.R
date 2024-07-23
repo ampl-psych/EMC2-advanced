@@ -193,7 +193,7 @@ make_data <- function(parameters,design = NULL,n_trials=NULL,data=NULL,expand=1,
       if (!is.null(Fcovariates)) {
         if (!(all(names(Fcovariates)  %in% names(design$Fcovariates))))
           stop("All Fcovariates must be named in design$Fcovariates")
-        if (!is.data.frame(Fcovariates)) {
+        if (!is.data.frame(Fcovariates) & Fcovariates != "SSD") {
           if (!all(unlist(lapply(Fcovariates,is.function))))
             stop("Fcovariates must be either a data frame or list of functions")
           nams <- names(Fcovariates)
