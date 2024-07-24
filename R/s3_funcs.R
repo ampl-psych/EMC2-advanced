@@ -975,14 +975,14 @@ get_data.emc <- function(emc) {
       tmp <- do.call(rbind, tmp)
       row.names(tmp) <- NULL
       tmp <- tmp[tmp$lR == levels(tmp$lR)[1],]
-      tmp <- tmp[,!(colnames(tmp) %in% c("trials","lR","lM","winner"))]
+      tmp <- tmp[,!(colnames(tmp) %in% c("trials","lR","lM", "winner", "SlR", "RACE"))]
       dat[[i]] <- tmp
     }
   } else{
     dat <- do.call(rbind,lapply(emc[[1]]$data,\(x) x[attr(x,"expand"),]))
     row.names(dat) <- NULL
     dat <- dat[dat$lR == levels(dat$lR)[1],]
-    dat <- dat[,!(colnames(dat) %in% c("trials","lR","lM","winner"))]
+    dat <- dat[,!(colnames(dat) %in% c("trials","lR","lM","winner", "SlR", "RACE"))]
   }
   return(dat)
 }
