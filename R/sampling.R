@@ -813,7 +813,7 @@ calc_ll_manager <- function(proposals, dadm, ll_func, component = NULL){
       lls <- apply(proposals,1, ll_func,dadm = dadm)
     } else{
       designs <- list()
-      for(p in p_types){
+      for(p in c(p_types, attr(attr(dadm, "adaptive"), "aptypes"))){
         designs[[p]] <- attr(dadm,"designs")[[p]][attr(attr(dadm,"designs")[[p]],"expand"),,drop=FALSE]
       }
       constants <- attr(dadm, "constants")
