@@ -102,11 +102,15 @@ LNR <- function() {
     # p_vector transform scaling parameter by s=1 assumed in lnr.R
     transform = function(x) x,
     # Trial dependent parameter transform
-    Ttransform = function(pars,dadm) pars,
+    Ttransform = function(pars,dadm) {
+      if (!is.null(attr(dadm,"adaptive"))) pars <- do_adaptive(pars,dadm)
+      attr(pars,"ok") <- (pars[,"s"] > 0) & (pars[,"t0"] > .05)
+      pars
+    },
     # Random function for racing accumulators
     rfun=function(lR=NULL,pars) {
-      if (is.null(lR)) return(rep(TRUE,dim(pars)[1]))
-      rLNR(lR,pars)
+      ok <- (pars[,"s"] > 0) & (pars[,"t0"] > .05)
+      if (is.null(lR)) ok else rLNR(lR,pars,ok=ok)
     },
     # Density function (PDF) for single accumulator
     dfun=function(rt,pars) dLNR(rt,pars),

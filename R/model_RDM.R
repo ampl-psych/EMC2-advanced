@@ -370,7 +370,6 @@ rRDM <- function(lR,pars,p_types=c("v","B","A","t0"),ok=rep(TRUE,dim(pars)[1]))
 #' # For all parameters that are not defined in the formula, default values are assumed
 #' # (see Table above).
 #' @export
-
 RDM <- function(){
   list(
     type="RACE",
@@ -390,14 +389,15 @@ RDM <- function(){
     transform = function(x) x,
     # Trial dependent parameter transform
     Ttransform = function(pars,dadm) {
+      if (!is.null(attr(dadm,"adaptive"))) pars <- do_adaptive(pars,dadm)
       attr(pars,"ok") <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0) &
-        ((pars[,"v"] > 1e-3) | pars[,"v"] == 0)
+        ((pars[,"v"] > 1e-3) | pars[,"v"] == 0) &  (pars[,"B"] >= 0) &  (pars[,"s"] > 0)
       pars
     },
     # Random function for racing accumulators
     rfun=function(lR=NULL,pars) {
       ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0) &
-        ((pars[,"v"] > 1e-3) | pars[,"v"] == 0)
+        ((pars[,"v"] > 1e-3) | pars[,"v"] == 0) &  (pars[,"B"] >= 0) &  (pars[,"s"] > 0)
       if (is.null(lR)) ok else rRDM(lR,pars,ok=ok)
     },
     # Density function (PDF) for single accumulator
@@ -409,7 +409,6 @@ RDM <- function(){
       log_likelihood_race(p_vector=p_vector, dadm = dadm, min_ll = min_ll)
   )
 }
-
 
 RDMt0natural <- function(){
   list(
