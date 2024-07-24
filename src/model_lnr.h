@@ -46,7 +46,9 @@ NumericVector plnr_c(NumericVector rts, NumericMatrix pars, LogicalVector idx, d
   int k = 0;
   for(int i = 0; i < rts.length(); i++){
     if(idx[i] == TRUE){
-      if(!NumericVector::is_na(pars(i,0)) & (rts[i] - pars(i,2) > 0) & (pars(i, 1) > 0) &  (pars(i, 2) > 0.05)){
+      if(NumericVector::is_na(pars(i,0))){
+        out[k] = 0;
+      } else if((rts[i] - pars(i,2) > 0) & (pars(i, 1) > 0) &  (pars(i, 2) > 0.05)){
         out[k] = R::plnorm(rts[i] - pars(i,2), pars(i, 0), pars(i, 1), TRUE, FALSE);
       } else{
         out[k] = min_ll;
@@ -64,7 +66,9 @@ NumericVector dlnr_c(NumericVector rts, NumericMatrix pars, LogicalVector idx, d
   int k = 0;
   for(int i = 0; i < rts.length(); i++){
     if(idx[i] == TRUE){
-      if(!NumericVector::is_na(pars(i,0)) & (rts[i] - pars(i,2) > 0) & (pars(i, 1) > 0) &  (pars(i, 2) > 0.05)){
+      if(NumericVector::is_na(pars(i,0))){
+        out[k] = 0;
+      } else if((rts[i] - pars(i,2) > 0) & (pars(i, 1) > 0) &  (pars(i, 2) > 0.05)){
         out[k] = R::dlnorm(rts[i] - pars(i,2), pars(i, 0), pars(i, 1), FALSE);
       } else{
         out[k] = min_ll;

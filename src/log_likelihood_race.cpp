@@ -155,7 +155,7 @@ double c_log_likelihood_race(NumericMatrix pars, DataFrame data,
   if(n_acc > 1){
     NumericVector loss = log(1- pfun(rts, pars, !winner, exp(min_ll))); //cdfs
     loss[is_na(loss)] = min_ll;
-    // loss[loss == log(1 - exp(min_ll))] = min_ll;
+    loss[loss == log(1 - exp(min_ll))] = min_ll;
     lds[!winner] = loss;
   }
   lds[is_na(lds)] = min_ll;
