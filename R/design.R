@@ -190,6 +190,10 @@ design <- function(formula = NULL,factors = NULL,Rlevels = NULL,model,data=NULL,
     # make sure "SSD" is added as covariate so that compression also takes
     # the stop-trials into account
     covariates <- unique(c(covariates, "SSD"))
+    functions$lI <- function(d) {
+      unique_values <- unique(d$lR)
+      factor(d$lR %in% unique_values[1:2], levels = c(F, T), labels = c("st", "go"))
+    } #function(d) factor(d$lR %in% c("g1","g2"),levels=c(F,T),labels=c("st","go"))
   }
 
   design <- list(Flist=formula,Ffactors=factors,Rlevels=Rlevels,
