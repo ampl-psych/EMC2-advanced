@@ -205,16 +205,64 @@ NumericVector vector_pow(NumericVector x1, NumericVector x2){
 }
 
 
+NumericVector run_delta_i_map(NumericVector q0, NumericVector alpha, NumericVector target, NumericVector winner){
+  NumericVector q(target.length());
+  q[0] = q0[0];
+  double pe;
+  for(int t = 1; t < q.length(); t ++){
+    if(NumericVector::is_na(target[t-1]) || winner[t-1] != 1){
+      q[t] = q[t-1];
+    } else{
+      pe = target[t-1] - q[t-1];
+      q[t] = q[t-1] + R::pnorm(alpha[t-1], 0, 1, TRUE, FALSE)*pe;
+    }
+  }
+  return(q);
+}
+
+
+NumericVector run_delta_adapt(NumericVector q0, NumericVector p, NumericMatrix target, bool isRL){
+    NumericVector winner;
+    NumericVector s_col;
+    if(isRL){
+      s_col = target(_, 1);
+    }
+    CharacterVector tmp = colnames(target);
+    if(is_true(any(contains(colnames(target), "winner")))){
+      winner = target(_, 0);
+      if(isRL){
+        target = target(_, Range(2, target.ncol() - 1));
+      } else{
+        target = target(_, Range(1, target.ncol() - 1));
+      }
+    } else{
+      winner.fill(1);
+    }
+
+    NumericMatrix out(target.nrow(), target.ncol());
+    for(int r = 0; r < target.ncol(); r ++){
+      out(_, r) = run_delta_i_map(q0, p, target(_, r), winner);
+    }
+    NumericVector out_v(target.nrow());
+    if(isRL){
+      for(int v = 0; v < target.nrow(); v ++){
+        out_v[v] = out(v, s_col[v]-1);
+      }
+    } else{
+      out_v = as<NumericVector>(out);
+    }
+    return(out_v);
+}
+
+
 // Here base is the base parameter, and dp are the additional parameters. They are all vectors.
 // Because here they have already been mapped back to the design (so one parameter per observation * number of accumulators)
 // Dyntype and maptype inform us what transformation to be done.
 // Data and cnames, tell us what columns in the data are informing our transformations
 NumericVector adaptfuns_c(NumericVector base, NumericMatrix dp, String dyntype, String maptype, DataFrame data, CharacterVector cnames, bool do_lR) {
   NumericVector out(data.nrow());
+  bool isRL = is_true(any(contains(cnames, "winner")));
   NumericVector lR = data["lR"];
-  // NumericVector covariates = data[cnames];
-  //
-  //
   NumericMatrix covariates(data.nrow(), cnames.length());
   LogicalVector cnames_idx = contains_multiple(data.names(), cnames);
   int k = 0;
@@ -230,6 +278,7 @@ NumericVector adaptfuns_c(NumericVector base, NumericMatrix dp, String dyntype, 
   } else{
     covariates = submat_rcpp(covariates, lR < 9999); // I'm doing something wrong here but this fixes it????
   }
+  colnames(covariates) = cnames;
   NumericVector res(covariates.nrow());
 
   // dyntypes
@@ -259,6 +308,9 @@ NumericVector adaptfuns_c(NumericVector base, NumericMatrix dp, String dyntype, 
   }
   if(dyntype == "p4"){
     res = dp(_, 0)*as<NumericVector>(covariates) + dp(_, 1)*pow(as<NumericVector>(covariates), 2) + dp(_, 2)*pow(as<NumericVector>(covariates), 3) + dp(_, 3)*pow(as<NumericVector>(covariates), 4);
+  }
+  if(dyntype == "d1"){
+    res = run_delta_adapt(dp(_, 1), dp(_, 2), covariates, isRL);
   }
   // Map types
   if(maptype == "lin"){
@@ -308,7 +360,12 @@ NumericMatrix map_adaptive(List adaptive, NumericMatrix p, DataFrame data) {
           z++;
         }
       }
-      bool do_lR = cur_dynamic["lR1"];
+      bool do_lR;
+      if(is_true(any(contains(cnames, "winner")))){
+        do_lR = FALSE;
+      } else{
+        do_lR = cur_dynamic["lR1"];
+      }
       p(_, q) = adaptfuns_c(p(_, q),dp, dyntype, maptype, data, cnames, do_lR);
     }
   }
