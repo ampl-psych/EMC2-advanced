@@ -6,9 +6,9 @@ The `R` package `EMC2` provides tools to perform Bayesian hierarchical analyses 
 
 To install the R package, and its dependencies you can use: 
 
-`remotes::install_github("ampl-psych/EMC2",dependencies=TRUE)`
+`remotes::install_github("ampl-psych/EMC2-advanced",dependencies=TRUE)`
 
-Alternatively, you can download the compressed package [here](<https://github.com/ampl-psych/EMC2/archive/refs/heads/main.tar.gz>) and install it by running:
+Alternatively, you can download the compressed package [here](<https://github.com/ampl-psych/EMC2-advanced/archive/refs/heads/main.tar.gz>) and install it by running:
 ` install.packages("emc2-main.tar.gz", repos = NULL, type = "source",dependencies=TRUE)`
 
 ## Workflow Overview
