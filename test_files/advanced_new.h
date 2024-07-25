@@ -5,22 +5,6 @@
 #include <Rcpp.h>
 using namespace Rcpp;
 
-
-// NumericVector run_delta_c_1p(double q0, double alpha, NumericMatrix covariates){
-//   NumericMatrix target;
-//   if(is_true(any(contains(colnames(covariates), "winner")))){
-//     NumericVector winner = covariates(_, 0);
-//     target = covariates(_, Range(1, covariates.ncol()));
-//   } else{
-//     NumericVector winner(covariates.nrow(), 1);
-//     target = covariates;
-//   }
-//   NumericMatrix out = NumericMatrix(target.nrow(), target.ncol());
-//   for(int v = 0; v < target.ncol(); v ++){
-//
-//   }
-// }
-
 NumericVector dynfuns_c(double base, NumericVector dp, String dyntype, String maptype, DataFrame data, CharacterVector cnames,
                         bool do_lR) {
   // bool isRL = contains(cnames, "winner");
@@ -42,7 +26,7 @@ NumericVector dynfuns_c(double base, NumericVector dp, String dyntype, String ma
     covariates = submat_rcpp(covariates, lR < 9999); // I'm doing something wrong here but this fixes it????
   }
   NumericVector res(covariates.nrow());
-//
+  //
   // dyntypes
   if(dyntype == "ld"){
     res = -1* as<NumericVector>(covariates);
@@ -76,7 +60,7 @@ NumericVector dynfuns_c(double base, NumericVector dp, String dyntype, String ma
   // }
   // Map types
   if(maptype == "lin"){
-   res = base + dp[0]*res;
+    res = base + dp[0]*res;
   }
   if(maptype == "plin"){
     res = exp(base) + exp(dp[0])*res;
@@ -94,7 +78,6 @@ NumericVector dynfuns_c(double base, NumericVector dp, String dyntype, String ma
   }
   return(out);
 }
-
 
 NumericMatrix map_dyn(List dynamic, DataFrame data, NumericVector p, CharacterVector curr_names,
                       LogicalVector isin) {
@@ -132,47 +115,57 @@ NumericVector vector_pow(NumericVector x1, NumericVector x2){
   return(out);
 }
 
-NumericVector adaptfuns_c(NumericVector base, NumericMatrix dp, String dyntype, String maptype, DataFrame data, String cnames, bool do_lR) {
+NumericVector adaptfuns_c(NumericVector base, NumericMatrix dp, String dyntype, String maptype, DataFrame data, CharacterVector cnames, bool do_lR) {
   NumericVector out(data.nrow());
   NumericVector lR = data["lR"];
-  NumericVector covariates = data[cnames];
-  NumericVector base_test = base;
-  if(do_lR){
-    covariates = covariates[lR == 1];
-    dp = submat_rcpp(dp, lR == 1);
-    base = base[lR == 1];
-  } else{
-    covariates = covariates[lR < 99999]; // I'm doing something wrong here but this fixes it????
+  // NumericVector covariates = data[cnames];
+  //
+  //
+  NumericMatrix covariates(data.nrow(), cnames.length());
+  LogicalVector cnames_idx = contains_multiple(colnames(data), cnames);
+  CharacterVector colnams_data = colnames(data);
+  int k = 0;
+  for(int j = 0; j < data.ncol(); j ++){
+    if(cnames_idx[j] == TRUE){
+      covariates(_, k) = as<NumericVector>(data[j]);
+      k++;
+    }
   }
-  NumericVector res(covariates.length());
+  if(do_lR){
+    covariates = submat_rcpp(covariates, lR == 1);
+    dp = submat_rcpp(dp, lR == 1);
+  } else{
+    covariates = submat_rcpp(covariates, lR < 9999); // I'm doing something wrong here but this fixes it????
+  }
+  NumericVector res(covariates.nrow());
 
   // dyntypes
   if(dyntype == "ld"){
-    res = -1*covariates;
+    res = -1*as<NumericVector>(covariates);
   }
   if(dyntype == "li"){
-    res = covariates;
+    res = as<NumericVector>(covariates);
   }
   if(dyntype == "ed"){
-    res = exp(-exp(dp(_, 1))*covariates);
+    res = exp(-exp(dp(_, 1))*as<NumericVector>(covariates));
   }
   if(dyntype == "ei"){
-    res = 1-exp(-exp(dp(_, 1))*covariates);
+    res = 1-exp(-exp(dp(_, 1))*as<NumericVector>(covariates));
   }
   if(dyntype == "pd"){
-    res = vector_pow((1+covariates), -exp(dp(_, 1)));
+    res = vector_pow((1+as<NumericVector>(covariates)), -exp(dp(_, 1)));
   }
   if(dyntype == "pi"){
-    res = 1-vector_pow((1+covariates), -exp(dp(_, 1)));
+    res = 1-vector_pow((1+as<NumericVector>(covariates)), -exp(dp(_, 1)));
   }
   if(dyntype == "p2"){
-    res = dp(_, 0)*covariates + dp(_, 1)*pow(covariates, 2);
+    res = dp(_, 0)*as<NumericVector>(covariates) + dp(_, 1)*pow(as<NumericVector>(covariates), 2);
   }
   if(dyntype == "p3"){
-    res = dp(_, 0)*covariates + dp(_, 1)*pow(covariates, 2) + dp(_, 2)*pow(covariates, 3);
+    res = dp(_, 0)*as<NumericVector>(covariates) + dp(_, 1)*pow(as<NumericVector>(covariates), 2) + dp(_, 2)*pow(as<NumericVector>(covariates), 3);
   }
   if(dyntype == "p4"){
-    res = dp(_, 0)*covariates + dp(_, 1)*pow(covariates, 2) + dp(_, 2)*pow(covariates, 3) + dp(_, 3)*pow(covariates, 4);
+    res = dp(_, 0)*as<NumericVector>(covariates) + dp(_, 1)*pow(as<NumericVector>(covariates), 2) + dp(_, 2)*pow(as<NumericVector>(covariates), 3) + dp(_, 3)*pow(as<NumericVector>(covariates), 4);
   }
   // Map types
   if(maptype == "lin"){
@@ -205,55 +198,29 @@ NumericMatrix map_adaptive(List adaptive, NumericMatrix p, DataFrame data) {
   CharacterVector adapt_names = adaptive.names();
   CharacterVector curr_names = colnames(p);
   LogicalVector isin = contains_multiple(curr_names, adapt_names);
-  // for(int q = 0; q < isin.length(); q ++){
-  //   if(isin[q] == TRUE){
-  //     String curr_name = curr_names[q];
-  //     cur_dynamic = adaptive[curr_name];
-  //     String dyntype = cur_dynamic["dyntype"];
-  //     String maptype = cur_dynamic["maptype"];
-  //     String cnames = cur_dynamic["covnames"];
-  //     CharacterVector aptypes = cur_dynamic["aptypes"];
-  //     LogicalVector is_adapt = contains_multiple(curr_names, aptypes);
-  //     NumericMatrix dp(p.nrow(), sum(is_adapt));
-  //     int z = 0;
-  //     for(int k = 0; k < isin.length();k++){
-  //       if(is_adapt[k] == TRUE){
-  //         dp(_, z) = p(_,k);
-  //         z++;
-  //       }
-  //     }
-  //     bool do_lR = cur_dynamic["lR1"];
-  //     p(_, q) = adaptfuns_c(p(_, q),dp, dyntype, maptype, data, cnames, do_lR);
-  //   }
-  // }
+  for(int q = 0; q < isin.length(); q ++){
+    if(isin[q] == TRUE){
+      String curr_name = curr_names[q];
+      cur_dynamic = adaptive[curr_name];
+      String dyntype = cur_dynamic["dyntype"];
+      String maptype = cur_dynamic["maptype"];
+      CharacterVector cnames = cur_dynamic["covnames"];
+      CharacterVector aptypes = cur_dynamic["aptypes"];
+      LogicalVector is_adapt = contains_multiple(curr_names, aptypes);
+      NumericMatrix dp(p.nrow(), sum(is_adapt));
+      int z = 0;
+      for(int k = 0; k < isin.length();k++){
+        if(is_adapt[k] == TRUE){
+          dp(_, z) = p(_,k);
+          z++;
+        }
+      }
+      bool do_lR = cur_dynamic["lR1"];
+      p(_, q) = adaptfuns_c(p(_, q),dp, dyntype, maptype, data, cnames, do_lR);
+    }
+  }
   return(p);
 }
 
 
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
