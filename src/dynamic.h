@@ -41,22 +41,52 @@ using namespace Rcpp;
 //   } else q
 // }
 
-NumericVector run_delta_i_dyn(double q0, double p, NumericVector target, NumericVector winner){
+NumericVector run_delta_i_dyn(double q0, double alpha, NumericVector target, NumericVector winner){
   NumericVector q(target.length());
-  NumericVector pe(target.length());
+  q[0] = q0;
+  alpha = R::pnorm(alpha, 0, 1, TRUE, FALSE);
+  double pe;
+  for(int t = 1; t < q.length(); t ++){
+    if(NumericVector::is_na(target[t-1]) || winner[t-1] != 1){
+      q[t] = q[t-1];
+    } else{
+      pe = target[t-1] - q[t-1];
+      q[t] = q[t-1] + alpha*pe;
+    }
+  }
+  return(q);
 }
 
-NumericMatrix run_delta_dyn(double q0, double p, NumericMatrix target){
-  NumericVector winner(target.nrow(), 1);
+NumericVector run_delta_dyn(double q0, double p, NumericMatrix target, bool isRL){
+  NumericVector winner;
+  NumericVector s_col;
+  if(isRL){
+    s_col = target(_, 1);
+  }
+  CharacterVector tmp = colnames(target);
   if(is_true(any(contains(colnames(target), "winner")))){
     winner = target(_, 0);
-    target = target(_, Range(1, target.ncol() - 1));
+    if(isRL){
+      target = target(_, Range(2, target.ncol() - 1));
+    } else{
+      target = target(_, Range(1, target.ncol() - 1));
+    }
+  } else{
+    winner.fill(1);
   }
   NumericMatrix out(target.nrow(), target.ncol());
   for(int r = 0; r < target.ncol(); r ++){
     out(_, r) = run_delta_i_dyn(q0, p, target(_, r), winner);
   }
-  return(out);
+  NumericVector out_v(target.nrow());
+  if(isRL){
+    for(int v = 0; v < target.nrow(); v ++){
+      out_v[v] = out(v, s_col[v]-1);
+    }
+  } else{
+    out_v = as<NumericVector>(out);
+  }
+  return(out_v);
 }
 
 // Here base is the base parameter, and dp are the additional parameters. They are all doubles.
@@ -64,7 +94,7 @@ NumericMatrix run_delta_dyn(double q0, double p, NumericMatrix target){
 // Data and cnames, tell us what columns in the data are informing our transformations
 NumericVector dynfuns_c(double base, NumericVector dp, String dyntype, String maptype, DataFrame data, CharacterVector cnames,
                         bool do_lR) {
-  // bool isRL = contains(cnames, "winner");
+  bool isRL = is_true(any(contains(cnames, "winner")));
   NumericVector out(data.nrow());
   NumericVector lR = data["lR"];
   NumericMatrix covariates(data.nrow(), cnames.length());
@@ -81,8 +111,7 @@ NumericVector dynfuns_c(double base, NumericVector dp, String dyntype, String ma
   } else{
     covariates = submat_rcpp(covariates, lR < 9999); // I'm doing something wrong here but this fixes it????
   }
-  Rcout << covariates;
-
+  colnames(covariates) = cnames;
   NumericVector res(covariates.nrow());
   //
   // dyntypes
@@ -113,9 +142,9 @@ NumericVector dynfuns_c(double base, NumericVector dp, String dyntype, String ma
   if(dyntype == "p4"){
     res = dp[0]*as<NumericVector>(covariates) + dp[1]* pow(as<NumericVector>(covariates), 2) + dp[2]* pow(as<NumericVector>(covariates), 3) + dp[3]* pow(as<NumericVector>(covariates), 4);
   }
-  // if(dyntype == "d1"){
-  //   res = run_delta_c_1p(dp[1], dp[2], covariates);
-  // }
+  if(dyntype == "d1"){
+    res = run_delta_dyn(dp[1], dp[2], covariates, isRL);
+  }
   // Map types
   if(maptype == "lin"){
     res = base + dp[0]*res;
@@ -133,6 +162,8 @@ NumericVector dynfuns_c(double base, NumericVector dp, String dyntype, String ma
     for(int i = 0; i < max(lR); i ++){
       out[lR == (i + 1)] = res;
     }
+  } else{
+    out = res;
   }
   return(out);
 }

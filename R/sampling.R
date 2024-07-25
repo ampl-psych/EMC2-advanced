@@ -133,7 +133,7 @@ init <- function(pmwgs, start_mu = NULL, start_var = NULL,
 #' @param cores_per_chain An integer. How many cores to use per chain. Parallelizes across participant calculations.
 #' @param cores_for_chains An integer. How many cores to use to parallelize across chains. Default is the number of chains.
 #' @param particles An integer. Number of starting values
-#'
+#' @param ... optional additional arguments
 #' @return An emc object
 #' @examples \dontrun{
 #' # Make a design and an emc object
@@ -155,8 +155,10 @@ init <- function(pmwgs, start_mu = NULL, start_var = NULL,
 #' }
 #' @export
 init_chains <- function(emc, start_mu = NULL, start_var = NULL, particles = 1000,
-                        cores_per_chain=1,cores_for_chains = length(emc))
+                        cores_per_chain=1,cores_for_chains = length(emc),
+                        ...)
 {
+  if(is.null(list(...)$compareRC)) attr(emc[[1]]$data[[1]], "compareRC") <- TRUE
   attributes <- get_attributes(emc)
   emc <- mclapply(emc,init,start_mu = start_mu, start_var = start_var,
            verbose = FALSE, particles = particles,
@@ -831,6 +833,13 @@ calc_ll_manager <- function(proposals, dadm, ll_func, component = NULL){
       }
       lls <- calc_ll(proposals, dadm, constants = constants, designs = designs, type = c_name,
                      p_types = p_types, min_ll = log(1e-10), group_idx = parameter_indices)
+    }
+    if(!is.null(attr(dadm, "compareRC"))){
+      lls_R <- apply(proposals,1, ll_func,dadm = dadm)
+      if(!identical(round(lls, 2), round(lls_R, 2))){
+        save(proposals, dadm, constants, designs, c_name, p_types, parameter_indices, ll_func, file = "RCerror.RData")
+        stop("R and C ll not the same! Saved required for replication in RCerror.RData")
+      }
     }
   }
   return(lls)
