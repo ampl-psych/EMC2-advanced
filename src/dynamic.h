@@ -42,39 +42,40 @@ using namespace Rcpp;
 // }
 
 NumericVector run_delta_i_dyn(double q0, double alpha, NumericVector target, NumericVector winner){
+
   NumericVector q(target.length());
   q[0] = q0;
-  alpha = R::pnorm(alpha, 0, 1, TRUE, FALSE);
+  double alpha_use = R::pnorm(alpha, 0, 1, TRUE, FALSE);
   double pe;
   for(int t = 1; t < q.length(); t ++){
     if(NumericVector::is_na(target[t-1]) || winner[t-1] != 1){
       q[t] = q[t-1];
     } else{
       pe = target[t-1] - q[t-1];
-      q[t] = q[t-1] + alpha*pe;
+      q[t] = q[t-1] + alpha_use*pe;
     }
   }
   return(q);
 }
 
 NumericVector run_delta_dyn(double q0, double p, NumericMatrix target, bool isRL){
-  NumericVector winner;
+  NumericVector winner(target.nrow());
   NumericVector s_col;
+  LogicalVector tmp = contains(colnames(target), "winner");
   if(isRL){
-    s_col = target(_, 1);
-  }
-  CharacterVector tmp = colnames(target);
-  if(is_true(any(contains(colnames(target), "winner")))){
-    winner = target(_, 0);
-    if(isRL){
-      target = target(_, Range(2, target.ncol() - 1));
+    if(tmp[0] == TRUE){
+      winner = target(_, 0);
+      s_col = target(_, 1);
     } else{
-      target = target(_, Range(1, target.ncol() - 1));
+      winner = target(_, 1);
+      s_col = target(_, 0);
     }
+    target = target(_, Range(2, target.ncol() - 1));
   } else{
     winner.fill(1);
   }
   NumericMatrix out(target.nrow(), target.ncol());
+  NumericVector tmp2;
   for(int r = 0; r < target.ncol(); r ++){
     out(_, r) = run_delta_i_dyn(q0, p, target(_, r), winner);
   }
@@ -98,11 +99,14 @@ NumericVector dynfuns_c(double base, NumericVector dp, String dyntype, String ma
   NumericVector out(data.nrow());
   NumericVector lR = data["lR"];
   NumericMatrix covariates(data.nrow(), cnames.length());
-  LogicalVector cnames_idx = contains_multiple(data.names(), cnames);
+  CharacterVector data_names = data.names();
+  LogicalVector cnames_idx = contains_multiple(data_names, cnames);
   int k = 0;
+  CharacterVector col_names(sum(cnames_idx));
   for(int j = 0; j < data.ncol(); j ++){
     if(cnames_idx[j] == TRUE){
       covariates(_, k) = as<NumericVector>(data[j]);
+      col_names[k] = data_names[j];
       k++;
     }
   }
@@ -111,7 +115,7 @@ NumericVector dynfuns_c(double base, NumericVector dp, String dyntype, String ma
   } else{
     covariates = submat_rcpp(covariates, lR < 9999); // I'm doing something wrong here but this fixes it????
   }
-  colnames(covariates) = cnames;
+  colnames(covariates) = col_names;
   NumericVector res(covariates.nrow());
   //
   // dyntypes
@@ -222,19 +226,18 @@ NumericVector run_delta_i_map(NumericVector q0, NumericVector alpha, NumericVect
 
 
 NumericVector run_delta_adapt(NumericVector q0, NumericVector p, NumericMatrix target, bool isRL){
-    NumericVector winner;
+    NumericVector winner(target.nrow());
     NumericVector s_col;
+    LogicalVector tmp = contains(colnames(target), "winner");
     if(isRL){
-      s_col = target(_, 1);
-    }
-    CharacterVector tmp = colnames(target);
-    if(is_true(any(contains(colnames(target), "winner")))){
-      winner = target(_, 0);
-      if(isRL){
-        target = target(_, Range(2, target.ncol() - 1));
+      if(tmp[0] == TRUE){
+        winner = target(_, 0);
+        s_col = target(_, 1);
       } else{
-        target = target(_, Range(1, target.ncol() - 1));
+        winner = target(_, 1);
+        s_col = target(_, 0);
       }
+      target = target(_, Range(2, target.ncol() - 1));
     } else{
       winner.fill(1);
     }
@@ -264,21 +267,25 @@ NumericVector adaptfuns_c(NumericVector base, NumericMatrix dp, String dyntype, 
   bool isRL = is_true(any(contains(cnames, "winner")));
   NumericVector lR = data["lR"];
   NumericMatrix covariates(data.nrow(), cnames.length());
-  LogicalVector cnames_idx = contains_multiple(data.names(), cnames);
+  CharacterVector data_names = data.names();
+  LogicalVector cnames_idx = contains_multiple(data_names, cnames);
   int k = 0;
+  CharacterVector col_names(sum(cnames_idx));
   for(int j = 0; j < data.ncol(); j ++){
     if(cnames_idx[j] == TRUE){
       covariates(_, k) = as<NumericVector>(data[j]);
+      col_names[k] = data_names[j];
       k++;
     }
   }
+
   if(do_lR){
     covariates = submat_rcpp(covariates, lR == 1);
     dp = submat_rcpp(dp, lR == 1);
   } else{
     covariates = submat_rcpp(covariates, lR < 9999); // I'm doing something wrong here but this fixes it????
   }
-  colnames(covariates) = cnames;
+  colnames(covariates) = col_names;
   NumericVector res(covariates.nrow());
 
   // dyntypes
