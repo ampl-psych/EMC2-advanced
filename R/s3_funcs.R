@@ -999,6 +999,8 @@ get_data.emc <- function(emc) {
 #' @param emc an emc object
 #'
 #' @return A dataframe of the original data
+#' @examples get_data(samples_LNR)
+#' @export
 get_data <- function(emc){
   UseMethod("get_data")
 }
