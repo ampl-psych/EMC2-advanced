@@ -158,7 +158,7 @@ init_chains <- function(emc, start_mu = NULL, start_var = NULL, particles = 1000
                         cores_per_chain=1,cores_for_chains = length(emc),
                         ...)
 {
-  if(is.null(list(...)$compareRC)) attr(emc[[1]]$data[[1]], "compareRC") <- TRUE
+  if(!is.null(list(...)$compareRC)) attr(emc[[1]]$data[[1]], "compareRC") <- TRUE
   attributes <- get_attributes(emc)
   emc <- mclapply(emc,init,start_mu = start_mu, start_var = start_var,
            verbose = FALSE, particles = particles,
