@@ -259,7 +259,9 @@ make_data <- function(parameters,design = NULL,n_trials=NULL,data=NULL,expand=1,
     if (!is.null(dynamic_cv)) {
       Rrt <- dynamic_rfun(dynamic_cv,p_vector,data,design)
     } else if (any(names(design$Ffunctions)=="staircase")) {
-      Rrt <- design$Ffunctions$staircase(dadm=data,pars=pars)
+      dots <- add_defaults(list(...), p = 0.25, SSD0 = 0.25, stairstep = 0.05, stairmin = 0, stairmax = Inf)
+      Rrt <- design$Ffunctions$staircase(dadm=data, dots$p, pars=pars, dots$SSD0, dots$stairstep,
+                                         dots$stairmin, dots$stairmax)
     } else Rrt <- model()$rfun(lR,pars)
   }
 

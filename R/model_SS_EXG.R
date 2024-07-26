@@ -1,4 +1,9 @@
-staircase <- function(dadm,p=.25,pars=NULL,
+
+#' Staircase algorithm
+#'
+#' @return A function to simulate staircase SSD data for
+#' @export
+staircase_fun <- function(dadm,p=.25,pars=NULL,
                       SSD0=.25,stairstep=.05,stairmin=0,stairmax=Inf)
   # random p of trials get NA, ready to be filled in by a staircase
 {
