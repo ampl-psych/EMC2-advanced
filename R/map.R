@@ -160,8 +160,14 @@ mapped_par <- function(p_vector,design,model=NULL,
   stop("Must specify model as not in design") else model <- design$model
   if (remove_subjects) design$Ffactors$subjects <- design$Ffactors$subjects[1]
   if (!is.matrix(p_vector)) p_vector <- make_pmat(p_vector,design)
-  if(!is.null(Fcovariates)){
-    if(Fcovariates == "SSD"){
+  if(is.character(Fcovariates) & ("SSD" %in% Fcovariates)){
+    Fcovariates <- Fcovariates[!Fcovariates=="SSD"]
+    if(length(Fcovariates) == 0){
+      Fcovariates <- NULL
+    }
+  }
+  if(is.list(Fcovariates)){
+    if(any(names(Fcovariates) == "SSD") | any(Fcovariates == "SSD")){
       Fcovariates <- NULL
     }
   }
@@ -179,7 +185,7 @@ mapped_par <- function(p_vector,design,model=NULL,
   pars_full <- get_pars_matrix(p_vector,dadm)
   pars <- pars_full[,!(colnames(pars_full) %in% c("lI"))] # for stop-signal: remove latent inhibition factor
   out <- cbind(adadm[,ok],round(pars[,!dimnames(pars)[[2]]=="SSD"],digits))
-  out <- out[,!(names(out) %in% c("lI","staircase"))]  # stop signal models  if (model()$type=="SDT")  out <- out[adadm$lR!=levels(adadm$lR)[length(levels(dadm$lR))],]
+  out <- out[,!(names(out) %in% c("lI","staircase", "SSD"))]  # stop signal models  if (model()$type=="SDT")  out <- out[adadm$lR!=levels(adadm$lR)[length(levels(dadm$lR))],]
   if (model()$type=="DDM")  out <- out[,!(names(out) %in% c("lR","lM"))]
   if (any(names(out)=="RACE") && remove_RACE)
     out <- out[as.numeric(out$lR) <= as.numeric(as.character(out$RACE)),,drop=FALSE]
