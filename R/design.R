@@ -151,7 +151,7 @@ design <- function(formula = NULL,factors = NULL,Rlevels = NULL,model,data=NULL,
     facs <- facs[!unlist(lapply(facs,is.null))]
     if (is.null(Rlevels)) Rlevels <- facs[["R"]] # Override for bivalent responses
     factors <- facs[names(facs)!="R"]
-    nfacs <- nfacs[!(names(nfacs) %in% c("trials","rt"))]
+    nfacs <- nfacs[!(names(nfacs) %in% c("trials","rt","SSD"))]
     if (length(nfacs)>0) covariates <- c(covariates,nfacs)
   }
   if (!is.null(dynamic)) {
