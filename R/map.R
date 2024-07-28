@@ -260,13 +260,6 @@ map_mcmc <- function(mcmc,design,include_constants = TRUE, add_recalculated = FA
     mcmc <- t(mcmc_array[,k,])
     pmat <- model()$transform(add_constants(mcmc,constants))
     plist <- lapply(map,doMap,pmat=pmat)
-    if (model()$type=="SDT") {
-      islR <- grepl("lR",dimnames(map$threshold)[[2]])
-      if (any(islR)) {
-        ht <- apply(map$threshold[,islR,drop=FALSE],1,sum)
-        plist$threshold <- plist$threshold[,ht!=max(ht),drop=FALSE]
-      }
-    }
     # Give mapped variables names and flag constant
     for (i in 1:length(plist)) {
       vars <- row.names(attr(terms(design$Flist[[i]]),"factors"))
