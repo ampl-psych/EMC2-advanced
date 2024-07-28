@@ -976,6 +976,8 @@ get_data.emc <- function(emc) {
       row.names(tmp) <- NULL
       tmp <- tmp[tmp$lR == levels(tmp$lR)[1],]
       tmp <- tmp[,!(colnames(tmp) %in% c("trials","lR","lM", "winner", "SlR", "RACE", names(design$Ffunctions)))]
+      is_numeric <- suppressWarnings(as.numeric(colnames(tmp)))
+      tmp <- tmp[,is.na(is_numeric)]
       dat[[i]] <- tmp
     }
   } else{
@@ -984,6 +986,8 @@ get_data.emc <- function(emc) {
     row.names(dat) <- NULL
     dat <- dat[dat$lR == levels(dat$lR)[1],]
     dat <- dat[,!(colnames(dat) %in% c("trials","lR","lM","winner", "SlR", "RACE", names(design$Ffunctions)))]
+    is_numeric <- suppressWarnings(as.numeric(colnames(dat)))
+    dat <- dat[,is.na(is_numeric)]
   }
   return(dat)
 }
