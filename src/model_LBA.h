@@ -138,7 +138,7 @@ NumericVector plba_c(NumericVector rts, NumericMatrix pars, LogicalVector idx, d
 
 NumericMatrix Ntransform_lba(NumericMatrix x, CharacterVector use, DataFrame data, List adaptive) {
   NumericMatrix out(clone(x));
-  LogicalVector col_idx = contains(colnames(x), "v");
+  LogicalVector col_idx = contains_multiple(colnames(x), {"v", "SD","SS","DD","DS"});
   LogicalVector use_idx = contains_multiple(colnames(x), use);
 
   for(int i = 0; i < x.ncol(); i ++){

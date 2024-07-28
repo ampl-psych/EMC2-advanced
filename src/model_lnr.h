@@ -15,7 +15,7 @@ NumericVector transform_lnr(NumericVector x){
 
 NumericMatrix Ntransform_lnr(NumericMatrix x, CharacterVector use, DataFrame data, List adaptive) {
   NumericMatrix out(clone(x));
-  LogicalVector col_idx = contains(colnames(x), "m");
+  LogicalVector col_idx = contains_multiple(colnames(x), {"m", "SD","SS","DD","DS"});
   LogicalVector use_idx = contains_multiple(colnames(x), use);
 
   for(int i = 0; i < x.ncol(); i ++){

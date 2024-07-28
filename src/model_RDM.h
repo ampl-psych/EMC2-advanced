@@ -158,11 +158,13 @@ NumericVector prdm_c(NumericVector rts, NumericMatrix pars, LogicalVector idx, d
 
 NumericMatrix Ntransform_rdm(NumericMatrix x, CharacterVector use, DataFrame data, List adaptive) {
   NumericMatrix out(clone(x));
-
+  LogicalVector col_idx = contains_multiple(colnames(x), {"SD","SS","DD","DS"});
   LogicalVector use_idx = contains_multiple(colnames(x), use);
   for(int i = 0; i < x.ncol(); i ++){
     if(use_idx[i] == TRUE){
-      out (_, i) = exp(out(_, i));
+      if(col_idx[i] == FALSE){
+        out (_, i) = exp(out(_, i));
+      };
     }
   };
   if(adaptive.length() > 0){
