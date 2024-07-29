@@ -226,6 +226,9 @@ map_mcmc <- function(mcmc,design,include_constants = TRUE, add_recalculated = FA
   # Maps vector or matrix (usually mcmc object) of sampled parameters to native
   # model parameterization.
 {
+  if(is.null(design$model)){
+    design <- design[[1]]
+  }
   model <- design$model
   doMap <- function(mapi,pmat) t(mapi %*% t(pmat[,dimnames(mapi)[[2]],drop=FALSE]))
 
