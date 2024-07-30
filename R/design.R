@@ -996,7 +996,8 @@ map_p <- function(p,dadm)
         dpnames <- attr(dadm,"dynamic")[[j]]$dpnames
         covnames <- attr(dadm,"dynamic")[[j]]$covnames
         if (any(covnames=="winner")) dadm$winner <- dadm$R == dadm$lR
-        lR <- attr(dadm,"dynamic")[[j]]$lR
+        dadm$winner[is.na(dadm$winner)] <- TRUE
+        lR <- attr(dadm,"dynamic")[[j]]$lR1
         if (is.matrix(p)) dp <- p[,dpnames] else dp <- p[dpnames]  # Matrix for make_data
         pm[,j] <- dynfuns(pm[,j],dp,dyntype,dadm[,c("lR",covnames),drop=FALSE],lR,maptype)
       }

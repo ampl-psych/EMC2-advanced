@@ -140,11 +140,12 @@ double c_log_likelihood_race(NumericMatrix pars, DataFrame data,
   CharacterVector R = data["R"];
   NumericVector lds_exp(n_out);
   const int n_acc = unique(R).length();
-  if(sum(contains(data.names(), "NACC")) == 1){
+  if(sum(contains(data.names(), "RACE")) == 1){
     NumericVector lR = data["lR"];
-    NumericVector NACC = data["NACC"];
+    NumericVector NACC = data["RACE"];
+    CharacterVector vals_NACC = NACC.attr("levels");
     for(int x = 0; x < pars.nrow(); x++){
-      if(lR[x] > NACC[x]){
+      if(lR[x] > atoi(vals_NACC[NACC[x]-1])){
         pars(x,0) = NA_REAL;
       }
     }
@@ -255,48 +256,6 @@ double c_log_likelihood_race_trdm(NumericMatrix pars, DataFrame data,
   return(sum(ll));
 }
 
-
-// log_likelihood_race_advantage <- function(p_vector,dadm,min_ll=log(1e-10))
-// # Race model summed log likelihood
-// {
-//
-//   pars <- get_pars_matrix(p_vector,dadm)
-//
-//   if (is.null(attr(pars,"ok")))
-//     ok <- !logical(dim(pars)[1]) else ok <- attr(pars,"ok")
-//
-//       nr <- length(levels(dadm$R))
-//       na <- nr-1
-//     nt <- nrow(dadm)/nr
-//
-// # This seems wasteful, can pre-compute, perhaps pass as dadm attr?
-//     winner <- rep(dadm$winner,each=na)
-//       rt <- rep(dadm$rt,each=na)
-//
-// # log pdf of winning response accumulators
-//       pdf <- matrix(attr(dadm,"model")()$dfun(rt=rt[winner],pars=pars[winner,]),
-//                     nrow=na,ncol=nt)
-// # cdf (NOT log) of winning response accumulators
-//         if (na>1) cdfw <- matrix(attr(dadm,"model")()$pfun(rt=rt[winner],pars=pars[winner,]),
-//             nrow=na,ncol=nt)
-// # cdf (NOT log) of loosing response accumulators
-//           cdfl <- array(attr(dadm,"model")()$pfun(rt=rt[!winner],pars=pars[!winner,]),
-//                         dim=c(na,na,nt))
-//           ia <- 1:na
-//         if (na==1) ll <- as.vector(log(pdf)) + log(1-as.vector(cdfl)) else {
-//           ll <- 0
-//           for (i in ia) {    # sum over accumulators for winning response
-//           ifirst <- ia[-i] # other accumulators, already done
-// # finish at t x already done
-//           ll <- ll + pdf[i,]*apply(cdfw[ifirst,,drop=FALSE],2,sum)
-//           }
-//           ll <- log(ll) + apply(log(1-apply(cdfl, 2:3, prod)),2,sum) # other responses survivors at t
-//         }
-//         ll[is.na(ll) | !ok] <- min_ll
-//         return(sum(pmax(min_ll,ll[attr(dadm,"expand_winner")])))
-// }
-
-
 double c_log_likelihood_race_advantage(NumericMatrix pars, DataFrame data,
                                        NumericVector (*dfun)(NumericVector, NumericMatrix, LogicalVector, double),
                                        NumericVector (*pfun)(NumericVector, NumericMatrix, LogicalVector, double),
@@ -372,22 +331,12 @@ double c_log_likelihood_race_advantage(NumericMatrix pars, DataFrame data,
     }
     ll = ll + log_sums_prod_out;
   }
-  // Rcout << ll;
-  // Rcout << "\n \n";
   ll = c_expand(ll, expand);
   ll[is_na(ll)] = min_ll;
   ll[is_infinite(ll)] = min_ll;
   ll[ll < min_ll] = min_ll;
   return(sum(ll));
 }
-
-// NumericVector calc_ll(NumericMatrix p_matrix, DataFrame data, NumericVector constants,
-//                       List designs, String type, CharacterVector p_types,
-//                       double min_ll, List group_idx){
-//   const int n_particles = p_matrix.nrow();
-//   const int n_trials = data.nrow();
-//   NumericVector lls(n_particles);
-//   NumericVector p_vector(p_matrix.ncol());
 
 // [[Rcpp::export]]
 NumericVector calc_ll(NumericMatrix p_matrix, DataFrame data, NumericVector constants,

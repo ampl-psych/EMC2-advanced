@@ -88,7 +88,6 @@ pDDM <- function(rt,R,pars,precision=2.5)
 #'
 #' @export
 #'
-
 DDM <- function(){
   list(
     type="DDM",
@@ -127,9 +126,11 @@ DDM <- function(){
       pars <- cbind(pars,z=pars[,"a"]*pars[,"Z"],
                     sz = 2*pars[,"SZ"]*pars[,"a"]*apply(cbind(pars[,"Z"],1-pars[,"Z"]),1,min))
       pars <- cbind(pars, d = pars[,"t0"]*(2*pars[,"DP"]-1))
+      if (!is.null(attr(dadm,"adaptive"))) pars <- do_adaptive(pars,dadm)
       attr(pars,"ok") <-
-        !( abs(pars[,"v"])> 20 | pars[,"a"]> 10 | pars[,"sv"]> 10 | pars[,"SZ"]> .999 |
-             pars[,"t0"] < .05 | pars[,"st0"]>.2)
+        !( abs(pars[,"v"])> 20 | pars[,"a"]> 10 | pars[,"a"] < 0 | pars[,"sv"] > 10 |
+             pars[,"SZ"]> .999 |pars[,"Z"]> .999 | pars[,"Z"] < .001 |
+             pars[,"t0"] < .05 | pars[,"st0"] > .5 | pars[,"st0"] < 0 | pars[,"DP"] < 0 | pars[,"DP"] > 1)
       if (pars[1,"sv"] !=0) attr(pars,"ok") <- attr(pars,"ok") & pars[,"sv"] > .001
       if (pars[1,"SZ"] !=0) attr(pars,"ok") <- attr(pars,"ok") & pars[,"SZ"] > .001
       pars
@@ -138,8 +139,9 @@ DDM <- function(){
     transform = function(p) p,
     # Random function
     rfun=function(lR=NULL,pars) {
-      ok <- !( abs(pars[,"v"])> 20 | pars[,"a"]> 10 | pars[,"sv"]> 10 | pars[,"SZ"]> .999 |
-                 pars[,"st0"]>.2 | pars[,"t0"] < .05)
+      ok <- !( abs(pars[,"v"])> 20 | pars[,"a"]> 10 | pars[,"a"] < 0 | pars[,"sv"] > 10 |
+                 pars[,"SZ"]> .999 |pars[,"Z"]> .999 | pars[,"Z"] < .001 |
+                 pars[,"t0"] < .05 | pars[,"st0"] > .5 | pars[,"st0"] < 0 | pars[,"DP"] < 0 | pars[,"DP"] > 1)
       if (pars[1,"sv"] !=0) attr(pars,"ok") <- attr(pars,"ok") & pars[,"sv"] > .001
       if (pars[1,"SZ"] !=0) attr(pars,"ok") <- attr(pars,"ok") & pars[,"SZ"] > .001
       if (is.null(lR)) ok else rDDM(lR,pars,precision=2.5,ok)
@@ -153,7 +155,6 @@ DDM <- function(){
     }
   )
 }
-
 
 
 

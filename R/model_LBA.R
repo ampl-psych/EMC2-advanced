@@ -153,9 +153,9 @@ rLBA <- function(lR,pars,p_types=c("v","sv","b","A","t0"),posdrift = TRUE,
   R[bad] <- NA
   rt[bad] <- Inf
   ok <- matrix(ok,nrow=length(levels(lR)))[1,]
-  out$R[ok] <- levels(lR)[R]
+  out$R[ok] <- levels(lR)[R][ok]
   out$R <- factor(out$R,levels=levels(lR))
-  out$rt[ok] <- rt
+  out$rt[ok] <- rt[ok]
   out
 }
 
@@ -248,12 +248,15 @@ LBA <- function(){
     # Trial dependent parameter transform
     Ttransform = function(pars,dadm) {
       pars <- cbind(pars,b=pars[,"B"] + pars[,"A"])
-      attr(pars,"ok") <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0)
+      if (!is.null(attr(dadm,"adaptive"))) pars <- do_adaptive(pars,dadm)
+      attr(pars,"ok") <- (pars[,"sv"] > 0) & (pars[,"B"] >= 0) &
+        (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0)
       pars
     },
     # Random function for racing accumulator
     rfun=function(lR=NULL,pars) {
-      ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0)
+      ok <- (pars[,"sv"] > 0) & (pars[,"B"] >= 0) &
+        (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0)
       if (is.null(lR)) ok else rLBA(lR,pars,posdrift=TRUE,ok=ok)
     },
     # Density function (PDF) for single accumulator
@@ -266,6 +269,5 @@ LBA <- function(){
     }
   )
 }
-
 
 

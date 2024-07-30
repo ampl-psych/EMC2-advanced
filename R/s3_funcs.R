@@ -280,27 +280,45 @@ check <- function(emc, ...){
 
 #' @rdname parameters
 #' @export
-parameters.emc <- function(emc,selection = "mu", N = 1000, ...)
+parameters.emc <- function(emc,selection = "mu", N = NULL, resample = FALSE, ...)
   # extracts and stacks chains into a matrix
 {
   dots <- list(...)
+
+  if(is.null(N) || resample){
+    nstage <- colSums(chain_n(emc))
+    has_ran <- nstage[nstage != 0]
+    if(!is.null(N)){
+      N_res <- N
+    } else{
+      N_res <- nstage[names(has_ran)[length(has_ran)]]
+    }
+    N <- nstage[names(has_ran)[length(has_ran)]]
+  }
   dots$merge_chains <- TRUE ; dots$return_mcmc <- FALSE
   dots$flatten <- TRUE; dots$length.out <- N/length(emc)
   out <- do.call(get_pars, c(list(emc,selection=selection), fix_dots(dots, get_pars)))
   if(selection == "alpha"){
     out <- aperm(out, c(3,1,2))
+    if(resample){
+      out <- apply(out, 2:3, sample, N_res, replace = T)
+    }
     out <- apply(out, 3, identity, simplify=FALSE)
     for(i in 1:length(out)){
       out[[i]] <- as.data.frame(out[[i]])
       out[[i]] <- cbind(names(out)[i], out[[i]])
       colnames(out[[i]])[1] <- "subjects"
-      out[[i]] <- out[[i]][1:N,]
+      if(!resample) out[[i]] <- out[[i]][1:N,]
     }
     out <- do.call(rbind, out)
     rownames(out) <- NULL
   } else{
     out <- as.data.frame(t(out))
-    out <- out[1:N,]
+    if(resample){
+      out <- apply(out, 2, sample, N_res, replace = T)
+    } else{
+      out <- out[1:N,]
+    }
   }
   out
 }
@@ -310,7 +328,8 @@ parameters.emc <- function(emc,selection = "mu", N = 1000, ...)
 #'
 #' @param emc An emc object
 #' @param selection String designating parameter type (e.g. mu, sigma2, correlation, alpha)
-#' @param N Integer. How many samples to take from the posterior.
+#' @param N Integer. How many samples to take from the posterior. If `NULL` will return the full posterior
+#' @param resample Boolean. If `TRUE` will sample N samples from the posterior with replacement
 #' @param ... Optional arguments that can be passed to `get_pars`
 #' @return A data frame with one row for each sample (with a subjects column if selection = "alpha")
 #' @export
@@ -318,10 +337,8 @@ parameters <- function(emc, ...){
   UseMethod("parameters")
 }
 
-
 #' @rdname fit
 #' @export
-
 fit.emc <- function(emc, stage = NULL, iter = 1000, stop_criteria = NULL,report_time=TRUE,
                     p_accept = .8, step_size = 100, verbose = TRUE, verboseProgress = FALSE, fileName = NULL,
                     particles = NULL, particle_factor=50, cores_per_chain = 1,
@@ -329,11 +346,10 @@ fit.emc <- function(emc, stage = NULL, iter = 1000, stop_criteria = NULL,report_
                     ...){
 
   if (report_time) start_time <- Sys.time()
-
-  if(!is.null(stop_criteria) & length(stop_criteria) == 1){
+  stages_names <- c("preburn", "burn", "adapt", "sample")
+  if(!is.null(stop_criteria) & !any(names(stop_criteria) %in% stages_names)){
     stop_criteria[["sample"]] <- stop_criteria
   }
-  stages_names <- c("preburn", "burn", "adapt", "sample")
   if(is.null(stop_criteria)){
     stop_criteria <- vector("list", length = 4)
     names(stop_criteria) <- stages_names
@@ -516,7 +532,6 @@ recovery.emc <- function(emc, true_pars,
   MCMC_samples <- do.call(get_pars, c(list(emc, selection = selection), fix_dots(dots, get_pars)))
   true_MCMC_samples <- NULL
   if(!is(true_pars, "emc")){
-    if(selection == "sigma2" & !is.matrix(true_pars)) true_pars <- diag(true_pars)
     true_pars <- do.call(get_pars, c(list(emc, selection = selection, type = type, true_pars = true_pars),
                                         fix_dots(dots, get_pars, exclude = c("thin", "filter"))))
   } else{
@@ -955,18 +970,24 @@ get_data.emc <- function(emc) {
   if(is.null(emc[[1]]$data[[1]]$subjects)){ # Joint model
     dat <- vector("list", length(emc[[1]]$data[[1]]))
     for(i in 1:length(dat)){
+      design <- attr(emc, "design_list")[[i]]
       tmp <- lapply(emc[[1]]$data,\(x) x[[i]][attr(x[[i]],"expand"),])
       tmp <- do.call(rbind, tmp)
       row.names(tmp) <- NULL
       tmp <- tmp[tmp$lR == levels(tmp$lR)[1],]
-      tmp <- tmp[,!(colnames(tmp) %in% c("trials","lR","lM","winner"))]
+      tmp <- tmp[,!(colnames(tmp) %in% c("trials","lR","lM", "winner", "SlR", "RACE", names(design$Ffunctions)))]
+      is_numeric <- suppressWarnings(as.numeric(colnames(tmp)))
+      tmp <- tmp[,is.na(is_numeric)]
       dat[[i]] <- tmp
     }
   } else{
+    design <- attr(emc, "design_list")[[1]]
     dat <- do.call(rbind,lapply(emc[[1]]$data,\(x) x[attr(x,"expand"),]))
     row.names(dat) <- NULL
     dat <- dat[dat$lR == levels(dat$lR)[1],]
-    dat <- dat[,!(colnames(dat) %in% c("trials","lR","lM","winner"))]
+    dat <- dat[,!(colnames(dat) %in% c("trials","lR","lM","winner", "SlR", "RACE", names(design$Ffunctions)))]
+    is_numeric <- suppressWarnings(as.numeric(colnames(dat)))
+    dat <- dat[,is.na(is_numeric)]
   }
   return(dat)
 }
@@ -982,6 +1003,8 @@ get_data.emc <- function(emc) {
 #' @param emc an emc object
 #'
 #' @return A dataframe of the original data
+#' @examples get_data(samples_LNR)
+#' @export
 get_data <- function(emc){
   UseMethod("get_data")
 }

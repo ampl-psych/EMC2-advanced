@@ -43,7 +43,7 @@
 #' }
 #' @export
 prior <- function(design, type = "standard", update = NULL,
-                      ask = NULL, fill_default = TRUE, ...){
+                  ask = NULL, fill_default = TRUE, ...){
   if(!is.null(update)){
     type <- attr(update, "type")
   }
@@ -78,16 +78,21 @@ prior <- function(design, type = "standard", update = NULL,
       } else{
         # First make sure we only take diagonals
         if(!is.null(dim(update[[name]]))){
+          prior_par_names <- names(diag(prior$prior[[name]]))
           upd <- diag(update[[name]])
         } else{
+          prior_par_names <- names(prior$prior[[name]])
           upd <- update[[name]]
         }
         # now fill in
-        args_names <- names(args[[name]])
         upd_names <- names(upd)
-        for(i in 1:length(upd)){
-          if(upd_names[i] %in% args_names){
-            args[[name]][args_names == upd_names[i]] <- upd[i]
+        if(length(upd) == 1){
+          if(!name %in% names(args)) args[[name]] <- upd
+        } else{
+          for(i in 1:length(upd)){
+            if(upd_names[i] %in% prior_par_names & (!upd_names[i] %in% names(args[[name]]))){
+              args[[name]][upd_names[i]] <- upd[i]
+            }
           }
         }
       }
@@ -127,7 +132,7 @@ prior <- function(design, type = "standard", update = NULL,
               to_do <- rep(F, length(to_check))
             } else{
               to_do <- !(names(to_check) %in% names(input))
-              to_check[!to_do] <- input
+              to_check[!to_do] <- input[names(input) %in% names(to_check)]
               prior$prior[[pri]] <- to_check
             }
           }
@@ -155,6 +160,7 @@ prior <- function(design, type = "standard", update = NULL,
   prior <- get_objects(design = design, type = type, prior = prior$prior, ...)
   return(prior$prior)
 }
+
 
 check_prior <- function(prior, sampled_p_names){
   if (is.null(names(prior$theta_mu_mean)))

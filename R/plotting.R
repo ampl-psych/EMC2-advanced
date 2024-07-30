@@ -698,7 +698,11 @@ profile_plot <- function(data, design, p_vector, range = .5, layout = NA,
     par(mfrow = coda_setmfrow(Nchains = 1, Nparms = length(use_par),
                               nplots = 1))
   } else{par(mfrow=layout)}
-  if(is.null(dots$dadm)) dadm <- design_model(data, design, verbose = FALSE)
+  if(is.null(dots$dadm)){
+    dadm <- design_model(data, design, verbose = FALSE)
+  } else{
+    dadm <- dots$dadm
+  }
   out <- data.frame(true = rep(NA, length(use_par)), max = rep(NA, length(use_par)), miss = rep(NA, length(use_par)))
   rownames(out) <- use_par
   for(p in 1:length(p_vector)){
@@ -782,7 +786,8 @@ plot_pars <- function(emc,layout=NA, selection="mu", show_chains = FALSE, plot_p
   }
   psamples <-  get_objects(sampler = emc, design = attr(emc,"design_list")[[1]],
                            type = type, sample_prior = T,
-                           selection = selection, N = N)
+                           selection = selection, N = N,
+                           prior = emc[[1]]$prior)
   pMCMC_samples <- do.call(get_pars, c(list(psamples, selection = selection, type = type),
                                        fix_dots(dots, get_pars, exclude = c("thin", "filter", "chain", "subject"))))
   if(length(pMCMC_samples) != length(MCMC_samples)) pMCMC_samples <- rep(pMCMC_samples, length(MCMC_samples))
@@ -790,7 +795,6 @@ plot_pars <- function(emc,layout=NA, selection="mu", show_chains = FALSE, plot_p
   true_MCMC_samples <- NULL
   if(!is.null(true_pars)){
     if(!is(true_pars, "emc")){
-      if(selection == "sigma2" & !is.matrix(true_pars)) true_pars <- diag(true_pars)
       true_pars <- do.call(get_pars, c(list(emc, selection = selection, type = type, true_pars = true_pars),
                                        fix_dots(dots, get_pars, exclude = c("thin", "filter", "chain"))))
     } else{

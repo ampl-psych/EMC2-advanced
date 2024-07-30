@@ -119,7 +119,9 @@ NumericVector drdm_c(NumericVector rts, NumericMatrix pars, LogicalVector idx, d
   int k = 0;
   for(int i = 0; i < rts.length(); i++){
     if(idx[i] == TRUE){
-      if(!NumericVector::is_na(pars(i,0)) & (rts[i] - pars(i,3) > 0) & (pars(i,3) > 0.05) & ((pars(i,2) > 1e-6) | (pars(i,2) == 0)) &
+      if(NumericVector::is_na(pars(i,0))){
+        out[k] = 0;
+      } else if((rts[i] - pars(i,3) > 0) & (pars(i,3) > 0.05) & ((pars(i,2) > 1e-6) | (pars(i,2) == 0)) &
          ((pars(i,0) > 1e-3) | (pars(i,0) == 0)) & (pars(i, 1) > 0) & (pars(i, 4) > 0)){
         out[k] = digt(rts[i] - pars(i,3), pars(i,1)/pars(i,4) + .5 * pars(i,2)/pars(i,4), pars(i,0)/pars(i,4), .5*pars(i,2)/pars(i,4));
       } else{
@@ -138,7 +140,9 @@ NumericVector prdm_c(NumericVector rts, NumericMatrix pars, LogicalVector idx, d
   int k = 0;
   for(int i = 0; i < rts.length(); i++){
     if(idx[i] == TRUE){
-      if(!NumericVector::is_na(pars(i,0)) & (rts[i] - pars(i,3) > 0) & (pars(i,3) > 0.049) & ((pars(i,2) > 1e-6) | (pars(i,2) == 0)) &
+      if(NumericVector::is_na(pars(i,0))){
+        out[k] = 0;
+      } else if((rts[i] - pars(i,3) > 0) & (pars(i,3) > 0.049) & ((pars(i,2) > 1e-6) | (pars(i,2) == 0)) &
          ((pars(i,0) > 1e-3) | (pars(i,0) == 0)) & (pars(i, 1) > 0) & (pars(i, 4) > 0)){
         out[k] = pigt(rts[i] - pars(i,3), pars(i,1)/pars(i,4) + .5 * pars(i,2)/pars(i,4), pars(i,0)/pars(i,4), .5*pars(i,2)/pars(i,4));
       } else{
@@ -154,11 +158,13 @@ NumericVector prdm_c(NumericVector rts, NumericMatrix pars, LogicalVector idx, d
 
 NumericMatrix Ntransform_rdm(NumericMatrix x, CharacterVector use, DataFrame data, List adaptive) {
   NumericMatrix out(clone(x));
-
+  LogicalVector col_idx = contains_multiple(colnames(x), {"SD","SS","DD","DS"});
   LogicalVector use_idx = contains_multiple(colnames(x), use);
   for(int i = 0; i < x.ncol(); i ++){
     if(use_idx[i] == TRUE){
-      out (_, i) = exp(out(_, i));
+      if(col_idx[i] == FALSE){
+        out (_, i) = exp(out(_, i));
+      };
     }
   };
   if(adaptive.length() > 0){
