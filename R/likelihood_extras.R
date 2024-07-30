@@ -884,6 +884,7 @@ log_likelihood_race_ss <- function(p_vector,dadm,min_ll=log(1e-10))
   # Set up indices:
   # "is" = logical, "isp" pars/dadm index, "t" trials index, "ist" logical on trial index
   # "n_" number of integer
+  n_acc <- length(levels(dadm$lR))                   # total number of accumulators
 
   if (is.null(attr(pars,"ok")))
     ok <- !logical(dim(pars)[1]) else ok <- attr(pars,"ok")
@@ -894,7 +895,6 @@ log_likelihood_race_ss <- function(p_vector,dadm,min_ll=log(1e-10))
 if (any(is.infinite(dadm$rt))) stop("BUGGER!")
 
   # Counts
-  n_acc <- length(levels(dadm$lR))                   # total number of accumulators
   n_accG <- sum(as.numeric(dadm[1:n_acc,"lI"])==2)   # go accumulators
   n_accST <- sum(as.numeric(dadm[1:n_acc,"lI"])==1)  # stop-triggered accumulators
   GOR <- levels(dadm$lR)[as.numeric(dadm[1:n_acc,"lI"])==2]
