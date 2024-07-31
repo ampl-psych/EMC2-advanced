@@ -572,181 +572,194 @@ dynamic_rfun <- function(dynamic_cv,p_vector,dadm,design)
     stop("Cant mix dynamic and adaptive")
 
   nacc <- length(levels(dadm$lR))
-  ntrials <- nrow(dadm)/nacc
   ndadadm <- dadm # no dynamic or adaptive, use in Ttransform
   attr(ndadadm,"dynamic") <- NULL
   attr(ndadadm,"adaptive") <- NULL
   pars <- map_p(design$model()$transform(add_constants(p_vector,design$constants)), dadm)
-  if (!is.null(design$dynamic)) {
-    # Now make dynamic pars
-    p_vector <- add_constants(p_vector,design$constants)
-    dynamic <- attr(dadm,"dynamic")
-    # Get number of q values for each dynamic parameter
-    nq <- lapply(dynamic,function(x){dynamic_names("learn")[x$dyntype]})
-    nq[is.na(nq)] <- NULL # remove non-dynamic
-    if (length(nq)==0) stop("No learning functions!")
-    # List to contain q values
-    dqlist <- setNames(vector(mode="list",length=length(nq)),names(nq))
-    # Collect together bits to do sequential updating
-    dpars <- setNames(vector(mode="list",length=length(dqlist)),names(dqlist))
-    for (p in names(dpars)) {
-      # Copy relevant bits of dynamic
-      dpars[[p]]$dyntype <- attr(dadm, "dynamic")[[p]]$dyntype
-      dpars[[p]]$maptype <- attr(dadm, "dynamic")[[p]]$maptype
-      dpars[[p]]$dpnames <- attr(dadm, "dynamic")[[p]]$dpnames
-      dpars[[p]]$covnames <- attr(dadm, "dynamic")[[p]]$covnames
-      dpars[[p]]$lR <- attr(dadm, "dynamic")[[p]]$lR
-      # As in map_p make matrix of base parameters
-      pm <- t(matrix(p_vector[,dimnames(attr(dadm, "designs")[[dynamic[[p]]$ptype]])[[2]]],
-                     dimnames=list(dimnames(attr(dadm, "designs")[[dynamic[[p]]$ptype]])[[2]],NULL))
-      )
-      dpars[[p]]$pm <- pm[rep(1, dim(pars)[1]), , drop = FALSE]
-      # Linear design mapping matrix
-      dpars[[p]]$dmat <- attr(dadm, "designs")[[dynamic[[p]]$ptype]][attr(attr(dadm,
-                                                                               "designs")[[dynamic[[p]]$ptype]], "expand"), , drop = FALSE]
-      # Do appropriate transform on q0 parameter
-      dqlist[[p]] <- switch(dpars[[p]]$dyntype,
-                            d1U = pnorm(p_vector[,dpars[[p]]$dpnames[2]]),
-                            d2U = rep(pnorm(p_vector[,dpars[[p]]$dpnames[2]]),2),
-                            d1P = exp(p_vector[,dpars[[p]]$dpnames[2]]),
-                            d2P = rep(exp(p_vector[,dpars[[p]]$dpnames[2]]),2),
-                            d1 =  p_vector[,dpars[[p]]$dpnames[2]],
-                            d2 =  rep(p_vector[,dpars[[p]]$dpnames[2]],2)
-      )
-      covnames <- attributes(dadm)$dynamic[[p]]$covnames
-      if (length(covnames)>1 && covnames[2]=="winner") {
-        dqlist[[p]] <- setNames(rep(dqlist[[p]],length(covnames)-2),covnames[-c(1:2)])
-      }
-    }
-  }
-  if (!is.null(design$adaptive)) {
-    adaptive <- design$adaptive
-    # Get number of q values for each adaptive parameter
-    nq <- lapply(adaptive,function(x){dynamic_names("learn")[x$dyntype]})
-    nq[is.na(nq)] <- NULL # remove non-dynamic
-    if (length(nq)==0) stop("No learning functions!")
-    # List to contain q values
-    aqlist <- setNames(vector(mode="list",length=length(nq)),names(nq))
-    # Collect together bits to do sequential updating
-    apars <- setNames(vector(mode="list",length=length(aqlist)),names(aqlist))
-    for (p in names(apars)) {
-      # Copy relevant bits of adaptive
-      apars[[p]]$dyntype <- attr(dadm, "adaptive")[[p]]$dyntype
-      apars[[p]]$maptype <- attr(dadm, "adaptive")[[p]]$maptype
-      if (apars[[p]]$dyntype=="d1b") apars[[p]]$maptype <- "lin"
-      apars[[p]]$apnames <- attr(dadm, "adaptive")[[p]]$apnames
-      apars[[p]]$aptypes <- attr(dadm, "adaptive")[[p]]$aptypes
-      apars[[p]]$covnames <- attr(dadm, "adaptive")[[p]]$covnames
-      apars[[p]]$pcovnames <- attr(dadm, "adaptive")[[p]]$pcovnames
-      apars[[p]]$lR <- attr(dadm, "adaptive")[[p]]$lR
-      # Do appropriate transform on q0 parameter
-      aqlist[[p]] <- switch(apars[[p]]$dyntype,
-                            d1U = pnorm(pars[1,apars[[p]]$aptypes[2]]),
-                            d2U = rep(pnorm(pars[1,apars[[p]]$aptypes[2]]),2),
-                            d1P = exp(pars[1,apars[[p]]$aptypes[2]]),
-                            d2P = rep(exp(pars[1,apars[[p]]$aptypes[2]]),2),
-                            d1 =  pars[1,apars[[p]]$aptypes[2]],
-                            d2 =  rep(pars[1,apars[[p]]$aptypes[2]],2),
-                            d1b = 0
-      )
-      covnames <- attributes(dadm)$adaptive[[p]]$covnames
-      if (length(covnames) > 1 && covnames[2]=="winner")
-        aqlist[[p]] <- setNames(rep(aqlist[[p]],length(covnames)-2),covnames[-c(1:2)])
-
-    }
-  }
-  # Make container for simulated data and fill in first line
-  data <- dadm[dadm$lR==levels(dadm$lR)[1],]
-  acci <- 1:nacc
-  pars[acci,] <- design$model()$Ttransform(design$model()$Ntransform(
-    pars[acci,,drop=FALSE],attr(design, "transform_names")),ndadadm)
-  if (!is.null(design$adaptive)) {
-    for (p in names(adaptive)) {
-      pars[acci,p] <- switch(apars[[p]]$maptype, # map q to parameter
-                             lin = pars[acci,p] + p_vector[,apars[[p]]$aptypes[1]]*aqlist[[p]][1],
-                             plin = exp(pars[acci,p]) + exp(p_vector[,apars[[p]]$aptypes[1]])*aqlist[[p]][1],
-                             ucent = pars[acci,p] + p_vector[,apars[[p]]$aptypes[1]]*(aqlist[[p]][1]-.5))
-    }
-  }
-  data[1,c("R","rt")] <- design$model()$rfun(dadm$lR[acci],pars[acci,,drop=FALSE])
-  for (cv in names(dynamic_cv)) {
-    if (cv=="winner") {
-      value <- t(dadm[acci,][,attr(dadm, "isRL")])
-    } else if (!is.null(design$adaptive) && !is.null(apars[[p]]$pcovnames)) {
-      data[1,cv] <- dynamic_cv[[cv]](data[1,,drop=FALSE],pars[acci,apars[[p]]$pcovnames])
-    } else data[1,cv] <- dynamic_cv[[cv]](data[1,,drop=FALSE])
-  }
-  # Main loop
-  for (i in 2:ntrials) {
-    j <- (1+(i-1)*nacc):(i*nacc) # pick out rows of dadm for current trial
+  data_out <- data.frame()
+  unq_subs <- unique(dadm$subjects)
+  k <- 1
+  for(sub in unique(dadm$subjects)){
+    idx <- dadm$subjects == sub
+    tmp_p_vector <- p_vector[k,,drop = F]
+    k <- k + 1
+    tmp_dadm <- dadm[idx,]
+    ntrials <- nrow(tmp_dadm)/nacc
+    tmp_dadm$subjects <- factor(tmp_dadm$subjects)
+    tmp_pars <- pars[idx,]
     if (!is.null(design$dynamic)) {
-      for (p in names(dynamic)) {  # loop over dynamic parameters, updating q and pars
-        if (any(dpars[[p]]$covnames=="winner"))  {
-          resp <- as.numeric(data[i-1,"R"]) # only update last winning response
-          learn <- names(value[,resp])[!is.na(value[,resp])]
-          useq <- dadm[[dpars[[p]]$covnames[1]]][j] # q values to use in computing  current v
-          dqlist[[p]][learn] <- one_d(dqlist[[p]][learn],p_vector[,dpars[[p]]$dpnames][-c(1:2)],
-                                      value[!is.na(value)][resp],dpars[[p]]$dyntype)
-        } else {
-          target <- data[i - 1, dpars[[p]]$covnames]
-          dqlist[[p]] <- one_d(dqlist[[p]],p_vector[,dpars[[p]]$dpnames][-c(1:2)],
-                               target,dpars[[p]]$dyntype)
-          useq <- length(dqlist[[p]])
-        }
-        pm <- dpars[[p]]$pm[j,,drop=FALSE] # Current base parameter
-        pm[,p] <- switch(dpars[[p]]$maptype, # map q to parameter
-                         lin = pm[,p] + p_vector[,dpars[[p]]$dpnames[1]]*dqlist[[p]][useq],
-                         plin = exp(pm[,p]) + exp(p_vector[,dpars[[p]]$dpnames[1]])*dqlist[[p]][useq],
-                         ucent = pm[,p] + p_vector[,dpars[[p]]$dpnames[1]]*(dqlist[[p]][useq]-.5)
+      # Now make dynamic pars
+      tmp_p_vector <- add_constants(tmp_p_vector,design$constants)
+      dynamic <- attr(tmp_dadm,"dynamic")
+      # Get number of q values for each dynamic parameter
+      nq <- lapply(dynamic,function(x){dynamic_names("learn")[x$dyntype]})
+      nq[is.na(nq)] <- NULL # remove non-dynamic
+      if (length(nq)==0) stop("No learning functions!")
+      # List to contain q values
+      dqlist <- setNames(vector(mode="list",length=length(nq)),names(nq))
+      # Collect together bits to do sequential updating
+      dpars <- setNames(vector(mode="list",length=length(dqlist)),names(dqlist))
+      for (p in names(dpars)) {
+        # Copy relevant bits of dynamic
+        dpars[[p]]$dyntype <- attr(tmp_dadm, "dynamic")[[p]]$dyntype
+        dpars[[p]]$maptype <- attr(tmp_dadm, "dynamic")[[p]]$maptype
+        dpars[[p]]$dpnames <- attr(tmp_dadm, "dynamic")[[p]]$dpnames
+        dpars[[p]]$covnames <- attr(tmp_dadm, "dynamic")[[p]]$covnames
+        dpars[[p]]$lR <- attr(tmp_dadm, "dynamic")[[p]]$lR
+        # As in map_p make matrix of base parameters
+        pm <- t(matrix(tmp_p_vector[,dimnames(attr(tmp_dadm, "designs")[[dynamic[[p]]$ptype]])[[2]]],
+                       dimnames=list(dimnames(attr(tmp_dadm, "designs")[[dynamic[[p]]$ptype]])[[2]],NULL))
         )
-        pars[j, dynamic[[p]]$ptype] <- apply(pm*dpars[[p]]$dmat[j,], 1, sum) # Linear design mapping
+        dpars[[p]]$pm <- pm[rep(1, dim(tmp_pars)[1]), , drop = FALSE]
+        # Linear design mapping matrix
+        dpars[[p]]$dmat <- attr(tmp_dadm, "designs")[[dynamic[[p]]$ptype]][attr(attr(tmp_dadm,
+                           "designs")[[dynamic[[p]]$ptype]], "expand"), , drop = FALSE]
+        dpars[[p]]$dmat <- dpars[[p]]$dmat[idx,, drop = F]
+        # Do appropriate transform on q0 parameter
+        dqlist[[p]] <- switch(dpars[[p]]$dyntype,
+                              d1U = pnorm(tmp_p_vector[,dpars[[p]]$dpnames[2]]),
+                              d2U = rep(pnorm(tmp_p_vector[,dpars[[p]]$dpnames[2]]),2),
+                              d1P = exp(tmp_p_vector[,dpars[[p]]$dpnames[2]]),
+                              d2P = rep(exp(tmp_p_vector[,dpars[[p]]$dpnames[2]]),2),
+                              d1 =  tmp_p_vector[,dpars[[p]]$dpnames[2]],
+                              d2 =  rep(tmp_p_vector[,dpars[[p]]$dpnames[2]],2)
+        )
+        covnames <- attributes(tmp_dadm)$dynamic[[p]]$covnames
+        if (length(covnames)>1 && covnames[2]=="winner") {
+          dqlist[[p]] <- setNames(rep(dqlist[[p]],length(covnames)-2),covnames[-c(1:2)])
+        }
       }
     }
     if (!is.null(design$adaptive)) {
+      adaptive <- design$adaptive
+      # Get number of q values for each adaptive parameter
+      nq <- lapply(adaptive,function(x){dynamic_names("learn")[x$dyntype]})
+      nq[is.na(nq)] <- NULL # remove non-dynamic
+      if (length(nq)==0) stop("No learning functions!")
+      # List to contain q values
+      aqlist <- setNames(vector(mode="list",length=length(nq)),names(nq))
+      # Collect together bits to do sequential updating
+      apars <- setNames(vector(mode="list",length=length(aqlist)),names(aqlist))
+      for (p in names(apars)) {
+        # Copy relevant bits of adaptive
+        apars[[p]]$dyntype <- attr(tmp_dadm, "adaptive")[[p]]$dyntype
+        apars[[p]]$maptype <- attr(tmp_dadm, "adaptive")[[p]]$maptype
+        if (apars[[p]]$dyntype=="d1b") apars[[p]]$maptype <- "lin"
+        apars[[p]]$apnames <- attr(tmp_dadm, "adaptive")[[p]]$apnames
+        apars[[p]]$aptypes <- attr(tmp_dadm, "adaptive")[[p]]$aptypes
+        apars[[p]]$covnames <- attr(tmp_dadm, "adaptive")[[p]]$covnames
+        apars[[p]]$pcovnames <- attr(tmp_dadm, "adaptive")[[p]]$pcovnames
+        apars[[p]]$lR <- attr(tmp_dadm, "adaptive")[[p]]$lR
+        # Do appropriate transform on q0 parameter
+        aqlist[[p]] <- switch(apars[[p]]$dyntype,
+                              d1U = pnorm(tmp_pars[1,apars[[p]]$aptypes[2]]),
+                              d2U = rep(pnorm(tmp_pars[1,apars[[p]]$aptypes[2]]),2),
+                              d1P = exp(tmp_pars[1,apars[[p]]$aptypes[2]]),
+                              d2P = rep(exp(tmp_pars[1,apars[[p]]$aptypes[2]]),2),
+                              d1 =  tmp_pars[1,apars[[p]]$aptypes[2]],
+                              d2 =  rep(tmp_pars[1,apars[[p]]$aptypes[2]],2),
+                              d1b = 0
+        )
+        covnames <- attributes(tmp_dadm)$adaptive[[p]]$covnames
+        if (length(covnames) > 1 && covnames[2]=="winner")
+          aqlist[[p]] <- setNames(rep(aqlist[[p]],length(covnames)-2),covnames[-c(1:2)])
+
+      }
+    }
+    # Make container for simulated data and fill in first line
+    data <- tmp_dadm[tmp_dadm$lR==levels(tmp_dadm$lR)[1],]
+    acci <- 1:nacc
+    tmp_pars[acci,] <- design$model()$Ttransform(design$model()$Ntransform(
+      tmp_pars[acci,,drop=FALSE],attr(design, "transform_names")),ndadadm)
+    if (!is.null(design$adaptive)) {
       for (p in names(adaptive)) {
-        if (any(apars[[p]]$covnames=="winner"))  {
-          resp <- as.numeric(data[i-1,"R"]) # only update last winning response
-          learn <- names(value[,resp])[!is.na(value[,resp])]
-          aqlist[[p]][learn] <- one_d(aqlist[[p]][learn],pars[j[1],apars[[p]]$aptypes[-c(1:2)]],
-                                      value[!is.na(value)][resp],apars[[p]]$dyntype)
-          useq <- dadm[[apars[[p]]$covnames[1]]][j] # q values to use in computing  current v
-        } else {
-          target <- data[i-1,apars[[p]]$covnames]
-          aqlist[[p]] <- one_d(aqlist[[p]],pars[j[1],apars[[p]]$aptypes[-c(1:2)]],
-                               target,apars[[p]]$dyntype)
-          useq <- length(aqlist[[p]])
-        }
-        pars[j,p] <- switch(apars[[p]]$maptype, # map q to parameter
-                            lin = pars[j,p] + pars[j,apars[[p]]$aptypes[1]]*aqlist[[p]][useq],
-                            plin = exp(pars[,p]) + exp(pars[j,apars[[p]]$aptypes[1]])*aqlist[[p]][useq],
-                            ucent = pars[j,p] + pars[j,apars[[p]]$aptypes[1]]*(aqlist[[p]][useq]-.5))
+        tmp_pars[acci,p] <- switch(apars[[p]]$maptype, # map q to parameter
+                               lin = tmp_pars[acci,p] + tmp_p_vector[,apars[[p]]$aptypes[1]]*aqlist[[p]][1],
+                               plin = exp(tmp_pars[acci,p]) + exp(tmp_p_vector[,apars[[p]]$aptypes[1]])*aqlist[[p]][1],
+                               ucent = tmp_pars[acci,p] + tmp_p_vector[,apars[[p]]$aptypes[1]]*(aqlist[[p]][1]-.5))
       }
     }
-    # Having done all dynamic and adaptive, so updates simulate data
-    pars[j,] <- design$model()$Ttransform(design$model()$Ntransform(
-      pars[j,,drop=FALSE],attr(design, "transform_names")),ndadadm)
-    if (!all(design$model()$rfun(NULL,pars[j,,drop=FALSE])))
-      stop("Parameter generation for ",p," not ok: ",pars[j,p])
-    data[i,c("R","rt")] <- design$model()$rfun(dadm$lR[j],pars[j,,drop=FALSE])
-    # Finally update cvs
+    data[1,c("R","rt")] <- design$model()$rfun(tmp_dadm$lR[acci],tmp_pars[acci,,drop=FALSE])
     for (cv in names(dynamic_cv)) {
-      if (cv=="winner") value <- t(dadm[j,][,attr(dadm, "isRL")]) else {
-        if (!is.null(design$adaptive)) {
-          if (!is.null(apars[[p]]$pcovnames)) {
-            data[i,cv] <- dynamic_cv[[cv]](data[i,,drop=FALSE],pars[j,apars[[p]]$pcovnames])
-          } else if (apars[[p]]$dyntype=="d1b") {
-            data[i,cv] <- dynamic_cv[[cv]](data[i,,drop=FALSE],pars[j,p])
+      if (cv=="winner") {
+        value <- t(tmp_dadm[acci,][,attr(tmp_dadm, "isRL")])
+      } else if (!is.null(design$adaptive) && !is.null(apars[[p]]$pcovnames)) {
+        data[1,cv] <- dynamic_cv[[cv]](data[1,,drop=FALSE],tmp_pars[acci,apars[[p]]$pcovnames])
+      } else data[1,cv] <- dynamic_cv[[cv]](data[1,,drop=FALSE])
+    }
+    # Main loop
+    for (i in 2:ntrials) {
+      j <- (1+(i-1)*nacc):(i*nacc) # pick out rows of dadm for current trial
+      if (!is.null(design$dynamic)) {
+        for (p in names(dynamic)) {  # loop over dynamic parameters, updating q and pars
+          if (any(dpars[[p]]$covnames=="winner"))  {
+            resp <- as.numeric(data[i-1,"R"]) # only update last winning response
+            learn <- names(value[,resp])[!is.na(value[,resp])]
+            useq <- tmp_dadm[[dpars[[p]]$covnames[1]]][j] # q values to use in computing  current v
+            dqlist[[p]][learn] <- one_d(dqlist[[p]][learn],tmp_p_vector[,dpars[[p]]$dpnames][-c(1:2)],
+                                        value[!is.na(value)][resp],dpars[[p]]$dyntype)
+          } else {
+            target <- data[i - 1, dpars[[p]]$covnames]
+            dqlist[[p]] <- one_d(dqlist[[p]],tmp_p_vector[,dpars[[p]]$dpnames][-c(1:2)],
+                                 target,dpars[[p]]$dyntype)
+            useq <- length(dqlist[[p]])
           }
-        } else data[i,cv] <- dynamic_cv[[cv]](data[i,,drop=FALSE])
+          pm <- dpars[[p]]$pm[j,,drop=FALSE] # Current base parameter
+          pm[,p] <- switch(dpars[[p]]$maptype, # map q to parameter
+                           lin = pm[,p] + tmp_p_vector[,dpars[[p]]$dpnames[1]]*dqlist[[p]][useq],
+                           plin = exp(pm[,p]) + exp(tmp_p_vector[,dpars[[p]]$dpnames[1]])*dqlist[[p]][useq],
+                           ucent = pm[,p] + tmp_p_vector[,dpars[[p]]$dpnames[1]]*(dqlist[[p]][useq]-.5)
+          )
+          tmp_pars[j, dynamic[[p]]$ptype] <- apply(pm*dpars[[p]]$dmat[j,], 1, sum) # Linear design mapping
+        }
+      }
+      if (!is.null(design$adaptive)) {
+        for (p in names(adaptive)) {
+          if (any(apars[[p]]$covnames=="winner"))  {
+            resp <- as.numeric(data[i-1,"R"]) # only update last winning response
+            learn <- names(value[,resp])[!is.na(value[,resp])]
+            aqlist[[p]][learn] <- one_d(aqlist[[p]][learn],tmp_pars[j[1],apars[[p]]$aptypes[-c(1:2)]],
+                                        value[!is.na(value)][resp],apars[[p]]$dyntype)
+            useq <- tmp_dadm[[apars[[p]]$covnames[1]]][j] # q values to use in computing  current v
+          } else {
+            target <- data[i-1,apars[[p]]$covnames]
+            aqlist[[p]] <- one_d(aqlist[[p]],tmp_pars[j[1],apars[[p]]$aptypes[-c(1:2)]],
+                                 target,apars[[p]]$dyntype)
+            useq <- length(aqlist[[p]])
+          }
+          tmp_pars[j,p] <- switch(apars[[p]]$maptype, # map q to parameter
+                              lin = tmp_pars[j,p] + tmp_pars[j,apars[[p]]$aptypes[1]]*aqlist[[p]][useq],
+                              plin = exp(tmp_pars[,p]) + exp(tmp_pars[j,apars[[p]]$aptypes[1]])*aqlist[[p]][useq],
+                              ucent = tmp_pars[j,p] + tmp_pars[j,apars[[p]]$aptypes[1]]*(aqlist[[p]][useq]-.5))
+        }
+      }
+      # Having done all dynamic and adaptive, so updates simulate data
+      tmp_pars[j,] <- design$model()$Ttransform(design$model()$Ntransform(
+        tmp_pars[j,,drop=FALSE],attr(design, "transform_names")),ndadadm)
+      # if (!all(design$model()$rfun(NULL,tmp_pars[j,,drop=FALSE])))
+      #   stop("Parameter generation for ",p," not ok: ",tmp_pars[j,p])
+      data[i,c("R","rt")] <- design$model()$rfun(tmp_dadm$lR[j],tmp_pars[j,,drop=FALSE])
+      # Finally update cvs
+      for (cv in names(dynamic_cv)) {
+        if (cv=="winner") value <- t(tmp_dadm[j,][,attr(tmp_dadm, "isRL")]) else {
+          if (!is.null(design$adaptive)) {
+            if (!is.null(apars[[p]]$pcovnames)) {
+              data[i,cv] <- dynamic_cv[[cv]](data[i,,drop=FALSE],tmp_pars[j,apars[[p]]$pcovnames])
+            } else if (apars[[p]]$dyntype=="d1b") {
+              data[i,cv] <- dynamic_cv[[cv]](data[i,,drop=FALSE],tmp_pars[j,p])
+            }
+          } else data[i,cv] <- dynamic_cv[[cv]](data[i,,drop=FALSE])
+        }
       }
     }
+    nams <- c("R","rt",names(dynamic_cv))
+    nams <- nams[nams!="winner"]
+    # Revert cv back to original form based only on data
+    if (!is.null(design$adaptive)) for (p in names(adaptive)) for (cv in names(dynamic_cv)) {
+      if (!is.null(apars[[p]]$pcovnames) | (apars[[p]]$dyntype=="d1b"))
+        data[,cv] <- dynamic_cv[[cv]](data[,,drop=FALSE])
+    }
+    data_out <- rbind(data_out, data[,nams])
   }
-  nams <- c("R","rt",names(dynamic_cv))
-  nams <- nams[nams!="winner"]
-  # Revert cv back to original form based only on data
-  if (!is.null(design$adaptive)) for (p in names(adaptive)) for (cv in names(dynamic_cv)) {
-    if (!is.null(apars[[p]]$pcovnames) | (apars[[p]]$dyntype=="d1b"))
-      data[,cv] <- dynamic_cv[[cv]](data[,,drop=FALSE])
-  }
-  data[,nams]
+  return(data_out)
 }
