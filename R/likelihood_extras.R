@@ -901,7 +901,7 @@ if (any(is.infinite(dadm$rt))) stop("BUGGER!")
   if (n_accST>0) STR <- levels(dadm$lR)[as.numeric(dadm[1:n_acc,"lI"])==1]
 
   # Likelihood for all trials and for ok trials
-  allLL <- numeric(nrow(dadm)/n_acc)
+  allLL <- rep(-Inf,nrow(dadm)/n_acc)
   allok <- ok[c(dadm$lR==levels(dadm$lR)[1])] # used to put back into allLL
 
   # remove bad trials
