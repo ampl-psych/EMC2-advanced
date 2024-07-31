@@ -42,6 +42,7 @@
 #' @importFrom stats approxfun
 #' @importFrom stats as.dist
 #' @importFrom stats as.formula
+#' @importFrom stats convolve
 #' @importFrom stats cor
 #' @importFrom stats cov
 #' @importFrom stats cov2cor

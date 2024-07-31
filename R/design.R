@@ -694,7 +694,7 @@ design_model <- function(data,design,model=NULL,
     model <- design$model
   }
 
-  data$R <- factor(as.character(data$R),levels=design$Rlevels)
+  if(model()$type != "MRI") data$R <- factor(as.character(data$R),levels=design$Rlevels)
   if (model()$type=="SDT") rt_check <- FALSE
   if(model()$type == "MRI"){
     rt_check <- FALSE
@@ -831,7 +831,10 @@ design_model <- function(data,design,model=NULL,
       attr(dadm,"designs") <- out
       attr(dadm,"s_expand") <- da$subjects
       attr(dadm,"expand") <- 1:dim(dadm)[1]
-      attr(dadm,"expand_winner") <- 1:(nrow(dadm)/length(levels(dadm$lR)))
+      if(model()$type != "MRI") attr(dadm,"expand_winner") <- 1:(nrow(dadm)/length(levels(dadm$lR)))
+    }
+    if(model()$type == "MRI"){
+      attr(dadm, "design_matrix_mri") <- attr(design, "design_matrix")
     }
     p_names <-  unlist(lapply(out,function(x){dimnames(x)[[2]]}),use.names=FALSE)
     if (!is.null(design$dynamic))  {
@@ -1040,6 +1043,7 @@ dm_list <- function(dadm)
   # expand_uc <- attr(dadm,"expand_uc")
   # expand_lc <- attr(dadm,"expand_lc")
   adaptive <- attr(dadm,"adaptive")
+  dms_mri <- attr(dadm, "design_matrix_mri")
 
   # winner on expanded dadm
   expand_winner <- attr(dadm,"expand_winner")
@@ -1065,7 +1069,7 @@ dm_list <- function(dadm)
       attr(dl[[i]],"designs") <- sub_design(designs,isin)
       attr(dl[[i]],"expand") <- expand[isin1]-min(expand[isin1]) + 1
       attr(dl[[i]],"contract") <- NULL
-      attr(dl[[i]],"expand_winner") <- expand_winner[isinlR1]-min(expand_winner[isinlR1]) + 1
+      if(!is.null(expand_winner)) attr(dl[[i]],"expand_winner") <- expand_winner[isinlR1]-min(expand_winner[isinlR1]) + 1
       attr(dl[[i]],"ok_dadm_winner") <- NULL
       attr(dl[[i]],"ok_dadm_looser") <- NULL
       attr(dl[[i]],"ok_da_winner") <- NULL
@@ -1074,6 +1078,7 @@ dm_list <- function(dadm)
       attr(dl[[i]],"s_data") <- NULL
       attr(dl[[i]],"s_expand") <- NULL
       attr(dl[[i]],"prior") <- NULL
+      attr(dl[[i]], "design_matrix_mri") <- dms_mri[[i]]
       # attr(dl[[i]],"ok_dadm_winner") <- ok_dadm_winner[isin]
       # attr(dl[[i]],"ok_dadm_looser") <- ok_dadm_looser[isin]
       #
