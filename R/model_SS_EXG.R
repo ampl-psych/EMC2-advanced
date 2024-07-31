@@ -478,12 +478,12 @@ SSexG <- function() {
       if (any(names(dadm)=="SSD")) pars <- cbind(pars,SSD=dadm$SSD) else
         pars <- cbind(pars,SSD=rep(NA,dim(pars)[1]))
       pars <- cbind(pars,lI=as.numeric(dadm$lI))  # Only necessary for data generation.
-      attr(pars,"ok") <- (pars[,"tau"] > 1e-3) & (pars[,"sigma"] > 1e-3) & (pars[,"mu"] > 1e-3) &
-            (pars[,"tau"] < 1) & (pars[,"sigma"] < 1) &
-            (pars[,"tauS"] > 1e-3) & (pars[,"sigmaS"] > 1e-3) & (pars[,"muS"] > 1e-3) &
-            (pars[,"tauS"] < 1) & (pars[,"sigmaS"] < 1) &
-            ((pars[,"tf"] > 1e-6) | pars[,"tf"] == 0) & ((pars[,"gf"] > 1e-6) | pars[,"gf"] == 0)
-
+      # attr(pars,"ok") <- (pars[,"tau"] > 1e-3) & (pars[,"sigma"] > 1e-3) & (pars[,"mu"] > 1e-3) &
+      #       (pars[,"tau"] < 1) & (pars[,"sigma"] < 1) &
+      #       (pars[,"tauS"] > 1e-3) & (pars[,"sigmaS"] > 1e-3) & (pars[,"muS"] > 1e-3) &
+      #       (pars[,"tauS"] < 1) & (pars[,"sigmaS"] < 1) &
+      #       ((pars[,"tf"] > 1e-6) | pars[,"tf"] == 0) & ((pars[,"gf"] > 1e-6) | pars[,"gf"] == 0)
+      attr(pars, "ok") <- pars[,"sigmaS"] > 1e-3
       pars
     },
     # Density function (PDF) for single go racer
