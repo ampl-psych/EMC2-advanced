@@ -17,7 +17,7 @@ make_contrasts <- function(events, contrasts = NULL, remove_intercept_contr = FA
   fname <- events$factor[1]
   colnames(events)[colnames(events) == "event_type"] <- fname
   events[,fname] <- factor(events[,fname])
-  contrasts(events[,fname]) <- contrasts
+  stats::contrasts(events[,fname]) <- contrasts
   design <- model.matrix(as.formula(paste0("~ ", fname)), events)
   colnames(design)[1] <- paste0(fname, "0")
   if(remove_intercept_contr){
@@ -435,7 +435,14 @@ make_fmri_design_matrix <- function(frame_times, events=NULL, hrf_model='glover'
   return(df)
 }
 
-normal <- function(){
+#' Run an MRI model
+#'
+#' @return A model list with all the relevant functions to run the MRI model
+#' @export
+#'
+#' @examples
+#' normal_mri()
+normal_mri <- function(){
   return(
     list(
       type="MRI",
@@ -491,7 +498,7 @@ normal <- function(){
         #         }
 
         # transform parameters
-        p_vector <- normal()$Ntransform(p_vector)
+        p_vector <- normal_mri()$Ntransform(p_vector)
         X <- cbind(X, X2)
         # grab the right parameters
         is_sd <- grepl("sd", names(p_vector))
