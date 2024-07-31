@@ -888,7 +888,7 @@ log_likelihood_race_ss <- function(p_vector,dadm,min_ll=log(1e-10))
 
   if (is.null(attr(pars,"ok")))
     ok <- !logical(dim(pars)[1]) else ok <- attr(pars,"ok")
-  if (!any(ok)) return(min_ll*nrow(dadm)/n_acc)
+  if (!any(ok)) return(min_ll*length(attr(dadm, "expand_winner")))
 
   # # spurious go winners on no-response trials
   # dadm$winner[is.na(dadm$R)] <- FALSE
