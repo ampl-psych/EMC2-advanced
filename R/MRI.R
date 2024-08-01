@@ -19,6 +19,9 @@ make_contrasts <- function(events, contrasts = NULL, remove_intercept_contr = FA
   events[,fname] <- factor(events[,fname])
   stats::contrasts(events[,fname]) <- contrasts
   design <- model.matrix(as.formula(paste0("~ ", fname)), events)
+  if(!is.null(contrasts)){
+    design <- design[,1:(ncol(contrasts)+1)]
+  }
   colnames(design)[1] <- paste0(fname, "0")
   if(remove_intercept_contr){
     design <- design[,-1, drop = F]
