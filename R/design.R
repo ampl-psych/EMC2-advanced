@@ -410,10 +410,12 @@ sampled_p_vector <- function(design,model=NULL,doMap=TRUE, add_da = FALSE, all_c
   for(j in 1:length(design)){
     if(design[[j]]$model()$type == "MRI"){
       sampled_p_names <- attr(design[[j]], "p_vector")
+      cur_p <- numeric(length(sampled_p_names))
       if(length(design) != 1){
         sampled_p_names <- paste(j, sampled_p_names, sep = "|")
       }
-      out <- c(out, sampled_p_names)
+      names(cur_p) <- sampled_p_names
+      out <- c(out, cur_p)
       next
     }
 
