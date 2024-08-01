@@ -16,7 +16,11 @@ quick_convolve <- function(regressor, modulator, hkernel, frame_times) {
 make_contrasts <- function(events, contrasts = NULL, remove_intercept_contr = FALSE, do_print = F){
   fname <- events$factor[1]
   colnames(events)[colnames(events) == "event_type"] <- fname
-  events[,fname] <- factor(events[,fname])
+  if(!is.null(contrasts)){
+    events[,fname] <- factor(events[,fname], levels = rownames(contrasts))
+  } else{
+    events[,fname] <- factor(events[,fname])
+  }
   stats::contrasts(events[,fname]) <- contrasts
   design <- model.matrix(as.formula(paste0("~ ", fname)), events)
   if(!is.null(contrasts)){
