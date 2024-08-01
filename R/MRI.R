@@ -40,13 +40,13 @@ make_fmri_design_matrix_wrap <- function(timeseries, events, factors, contrasts,
   events$duration <- 0.01 # For now this is the default
   if(!is.data.frame(events)) events <- do.call(rbind, events)
   subjects <- unique(timeseries$subjects)
-  if(!identical(subjects, unique(events$subjects))) stop("subjects in timeseries and events not the same")
+  # if(!all(subjects %in% unique(events$subjects))) stop("subjects in timeseries and events not the same")
   all_dms <- list()
   for(subject in subjects){
     ev_sub <- events[events$subjects == subject,]
     ts_sub <- timeseries[timeseries$subjects == subject,]
     runs <- unique(ts_sub$run)
-    if(!identical(runs, unique(ev_sub$run))) stop(paste0("subject ", subject, " does not have same runs in timeseries and events"))
+    # if(!all(runs %in% unique(ev_sub$run))) stop(paste0("subject ", subject, " does not have same runs in timeseries and events"))
     dms_sub <- vector("list", length = length(runs))
     for(run in runs){
       ev_run <- ev_sub[ev_sub$run == run,]
