@@ -1,8 +1,20 @@
 
-#' Staircase algorithm
+#' Staircase function
 #'
-#' @return A function to simulate staircase SSD data for
+#' Staircase function for stop-signal models. Can be used to generate
+#' stop-signal data.
+#'
+#' @param dadm A data-augmented design
+#' @param p Proportion of stop-trials
+#' @param pars Parameter matrix, needs to have the same number of rows as `dadm`
+#' @param SSD0 Minimum SSD in seconds
+#' @param stairstep Step size in seconds
+#' @param stairmin Minimum SSD in seconds
+#' @param stairmax Maximum SSD in seconds
+#'
+#' @return A data frame with variables `R`, `rt`, and `SSD`
 #' @export
+#'
 staircase_fun <- function(dadm,p=.25,pars=NULL,
                       SSD0=.25,stairstep=.05,stairmin=0,stairmax=Inf)
   # random p of trials get NA, ready to be filled in by a staircase

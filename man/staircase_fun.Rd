@@ -2,7 +2,7 @@
 % Please edit documentation in R/model_SS_EXG.R
 \name{staircase_fun}
 \alias{staircase_fun}
-\title{Staircase algorithm}
+\title{Staircase function}
 \usage{
 staircase_fun(
   dadm,
@@ -14,9 +14,25 @@ staircase_fun(
   stairmax = Inf
 )
 }
+\arguments{
+\item{dadm}{A data-augmented design}
+
+\item{p}{Proportion of stop-trials}
+
+\item{pars}{Parameter matrix, needs to have the same number of rows as \code{dadm}}
+
+\item{SSD0}{Minimum SSD in seconds}
+
+\item{stairstep}{Step size in seconds}
+
+\item{stairmin}{Minimum SSD in seconds}
+
+\item{stairmax}{Maximum SSD in seconds}
+}
 \value{
-A function to simulate staircase SSD data for
+A data frame with variables \code{R}, \code{rt}, and \code{SSD}
 }
 \description{
-Staircase algorithm
+Staircase function for stop-signal models. Can be used to generate
+stop-signal data.
 }
