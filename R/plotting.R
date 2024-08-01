@@ -784,7 +784,7 @@ plot_pars <- function(emc,layout=NA, selection="mu", show_chains = FALSE, plot_p
     MCMC_samples <- list(lapply(MCMC_samples, function(x) do.call(rbind, x)))
     names(MCMC_samples) <- "subjects"
   }
-  psamples <-  get_objects(sampler = emc, design = attr(emc,"design_list")[[1]],
+  psamples <-  get_objects(sampler = emc, design = attr(emc,"design_list"),
                            type = type, sample_prior = T,
                            selection = selection, N = N,
                            prior = emc[[1]]$prior)
