@@ -1064,6 +1064,7 @@ plot_srrt <- function(data, breaks = 5, subject = NULL, pp = NULL){
          xlab = "SSD", ylab = "SRRT (median)", bty = "n", xaxt = "n",
          ylim = c(0, max(dat_ss_srrt$rt[,"median"], na.rm=TRUE)*1.5))
     axis(1, 1:nrow(dat_ss_srrt), labels = dat_ss_srrt$SSD_cuts)
+    lines(x=dat_ss_srrt$ssd_idx, y=dat_ss_srrt$rt[,"median"])
     if(is.null(pp)){
       arrows(x0=dat_ss_srrt$ssd_idx, y0=dat_ss_srrt$rt[,"median"]  + dat_ss_srrt$rt[,"se"],
              y1= dat_ss_srrt$rt[,"median"] - dat_ss_srrt$rt[,"se"],
@@ -1235,7 +1236,7 @@ plot_inhibition <- function(data, breaks = 5, subject = NULL, pp = NULL){
       dat_ss <- dat_ss_subject[dat_ss_subject$subjects == unique(dat_ss_subject$subjects)[i],]
       dat_ss_inhib <- create_plot_dat(dat_ss, breaks = breaks)
       # plot
-      plot(x=dat_ss_inhib$ssd_idx, y=dat_ss_inhib$Inhib[,"mean"], pch = 1,
+      plot(x=dat_ss_inhib$ssd_idx, y=dat_ss_inhib$Inhib[,"mean"], pch = 16,
            xlab = "SSD", ylab = "P(inhibit)", bty = "n", xaxt = "n",
            ylim = c(0,1),
            main = unique(dat_ss_subject$subjects)[i])
@@ -1254,9 +1255,9 @@ plot_inhibition <- function(data, breaks = 5, subject = NULL, pp = NULL){
             }
           }
           # compute summary statistics of pp
-          pp_median <- tapply(pp_inhib[,1], pp_inhib[,2], median)
-          pp_q2.5 <- tapply(pp_inhib[,1], pp_inhib[,2], quantile, probs = c(0.025))
-          pp_q97.5 <- tapply(pp_inhib[,1], pp_inhib[,2], quantile, probs = c(0.975))
+          pp_median <- tapply(pp_inhib[,1], pp_inhib[,2], median, na.rm = TRUE)
+          pp_q2.5 <- tapply(pp_inhib[,1], pp_inhib[,2], quantile, probs = c(0.025), na.rm = TRUE)
+          pp_q97.5 <- tapply(pp_inhib[,1], pp_inhib[,2], quantile, probs = c(0.975), na.rm = TRUE)
           points(x = dat_ss_inhib$ssd_idx, y = pp_median, col = "darkblue", pch = 17)
           lines(x = dat_ss_inhib$ssd_idx, y = pp_median, col = "darkblue", pch = 17, lty = 2)
           arrows(x0=dat_ss_inhib$ssd_idx, y0= pp_q97.5,
