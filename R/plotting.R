@@ -1031,3 +1031,244 @@ coda_setmfrow <- function (Nchains = 1, Nparms = 1, nplots = 1, sepplot = FALSE)
   }
   return(mfrow)
 }
+
+
+
+#' Plot signal-response response times (SRRT)
+#'
+#' @param data A data frame. Needs to have the variables `subjects`, `rt`, `R`, and `SSD`.
+#' @param breaks Number of breaks for the stop-signal delay (SSD).
+#' @param subject If set to `NULL` (default), averaged data is plotted, otherwise individual plots are created.
+#' @param pp A data frame with posterior predictives as returned by predict.emc()
+#'
+#' @return A matrix with the plotted data
+#' @export
+#'
+plot_srrt <- function(data, breaks = 5, subject = NULL, pp = NULL){
+
+  # function used to compute median SRRT and SE
+  median_se <- function(x) {
+    c(median = median(x, na.rm = TRUE), se = sd(x, na.rm = TRUE)/sqrt(length(x)))
+  }
+
+  # all data
+  if(is.null(subject)){
+    dat_ss <- data[is.finite(data$SSD) & !is.na(data$rt),]
+    # create SSD intervals based on all data
+    dat_ss$SSD_cuts <- cut(dat_ss$SSD, breaks = breaks)
+    # compute  median srrt for these SSD intervals
+    dat_ss_srrt <- as.data.frame(aggregate(rt ~ SSD_cuts, data = dat_ss, FUN = median_se, drop = FALSE))
+    dat_ss_srrt$ssd_idx <- order(dat_ss_srrt$SSD_cuts)
+    # plot
+    plot(x=dat_ss_srrt$ssd_idx, y=dat_ss_srrt$rt[,"median"], pch = 16,
+         xlab = "SSD", ylab = "SRRT (median)", bty = "n", xaxt = "n",
+         ylim = c(0, max(dat_ss_srrt$rt[,"median"], na.rm=TRUE)*1.5))
+    axis(1, 1:nrow(dat_ss_srrt), labels = dat_ss_srrt$SSD_cuts)
+    if(is.null(pp)){
+      arrows(x0=dat_ss_srrt$ssd_idx, y0=dat_ss_srrt$rt[,"median"]  + dat_ss_srrt$rt[,"se"],
+             y1= dat_ss_srrt$rt[,"median"] - dat_ss_srrt$rt[,"se"],
+             angle = 90, code = 3, length = 0.1)
+    }
+    if(!is.null(pp)){
+      pp_ssd <- pp[is.finite(pp$SSD) & !is.na(pp$rt),]
+      for(p in 1:max(pp_ssd$postn)){
+        pp_ssd_p <- pp_ssd[pp_ssd$postn==p,]
+        pp_ssd_p$SSD_cuts <- cut(pp_ssd_p$SSD, breaks = breaks)
+        dat_ss_srrt_pp <- as.data.frame(aggregate(rt ~ SSD_cuts, data = pp_ssd_p, FUN = median_se, drop = FALSE))
+        dat_ss_srrt_pp$ssd_idx <- order(dat_ss_srrt_pp$SSD_cuts)
+        if(p==1){
+          pp_srrt <- cbind(dat_ss_srrt_pp$rt[,"median"], dat_ss_srrt_pp$ssd_idx)
+        } else {
+          pp_srrt <- rbind(pp_srrt, cbind(dat_ss_srrt_pp$rt[,"median"], dat_ss_srrt_pp$ssd_idx))
+        }
+      }
+      # compute summary statistics of pp
+      pp_median <- tapply(pp_srrt[,1], pp_srrt[,2], median)
+      pp_q2.5 <- tapply(pp_srrt[,1], pp_srrt[,2], quantile, probs = c(0.025))
+      pp_q97.5 <- tapply(pp_srrt[,1], pp_srrt[,2], quantile, probs = c(0.975))
+      points(x = dat_ss_srrt$ssd_idx, y = pp_median, col = "darkblue", pch = 17)
+      lines(x = dat_ss_srrt$ssd_idx, y = pp_median, col = "darkblue", pch = 17, lty = 2)
+      arrows(x0=dat_ss_srrt$ssd_idx, y0= pp_q97.5,
+             y1= pp_q2.5,
+             angle = 90, code = 3, length = 0.1, col = "darkblue")
+
+    }
+    return(dat_ss_srrt[,1:2])
+  } else {
+    dat_ss_subject <- data[is.finite(data$SSD) ,] # & !is.na(data$rt)
+    # single participant
+    if(is.character(subject)) {
+      dat_ss_subject <- data[is.finite(data$SSD) & (data$subjects %in% subject),] # selected participants & !is.na(data$rt)
+    }
+    # results
+    res <- list()
+    for(i in 1:length(unique(dat_ss_subject$subjects))){
+      dat_ss <- dat_ss_subject[dat_ss_subject$subjects == unique(dat_ss_subject$subjects)[i],]
+      # create SSD intervals based on all data
+      dat_ss$SSD_cuts <- cut(dat_ss$SSD, breaks = breaks)
+      # compute  median srrt for these SSD intervals
+      dat_ss_srrt <- as.data.frame(aggregate(rt ~ SSD_cuts, data = dat_ss, FUN = median_se, drop = FALSE))
+      dat_ss_srrt$ssd_idx <- order(dat_ss_srrt$SSD_cuts)
+      # plot
+      plot(x=dat_ss_srrt$ssd_idx, y=dat_ss_srrt$rt[,"median"], pch = 16,
+           xlab = "SSD", ylab = "SRRT (median)", bty = "n", xaxt = "n",
+           ylim = c(min(dat_ss_srrt$rt[,"median"], na.rm=TRUE)*0.25, max(dat_ss_srrt$rt[,"median"], na.rm=TRUE)*1.75),
+           main = unique(dat_ss_subject$subjects)[i])
+      axis(1, 1:nrow(dat_ss_srrt), labels = dat_ss_srrt$SSD_cuts)
+      lines(x=dat_ss_srrt$ssd_idx, y=dat_ss_srrt$rt[,"median"])
+      if(is.null(pp)){
+        arrows(x0=dat_ss_srrt$ssd_idx, y0=dat_ss_srrt$rt[,"median"]  + dat_ss_srrt$rt[,"se"],
+               y1= dat_ss_srrt$rt[,"median"] - dat_ss_srrt$rt[,"se"],
+               angle = 90, code = 3, length = 0.1)
+      }
+
+      if(!is.null(pp)){
+        pp_ssd <- pp[is.finite(pp$SSD) & pp$subjects == unique(dat_ss_subject$subjects)[i],] # & !is.na(pp$rt)
+        for(p in 1:max(pp_ssd$postn)){
+          pp_ssd_p <- pp_ssd[pp_ssd$postn==p,]
+          pp_ssd_p$SSD_cuts <- cut(pp_ssd_p$SSD, breaks = breaks)
+          dat_ss_srrt_pp <- as.data.frame(aggregate(rt ~ SSD_cuts, data = pp_ssd_p, FUN = median_se, drop = FALSE))
+          dat_ss_srrt_pp$ssd_idx <- order(dat_ss_srrt_pp$SSD_cuts)
+          if(p==1){
+            pp_srrt <- cbind(dat_ss_srrt_pp$rt[,"median"], dat_ss_srrt_pp$ssd_idx)
+          } else {
+            pp_srrt <- rbind(pp_srrt, cbind(dat_ss_srrt_pp$rt[,"median"], dat_ss_srrt_pp$ssd_idx))
+          }
+        }
+        # compute summary statistics of pp
+        pp_median <- tapply(pp_srrt[,1], pp_srrt[,2], median, na.rm = TRUE)
+        pp_q2.5 <- tapply(pp_srrt[,1], pp_srrt[,2], quantile, probs = c(0.025), na.rm = TRUE)
+        pp_q97.5 <- tapply(pp_srrt[,1], pp_srrt[,2], quantile, probs = c(0.975), na.rm = TRUE)
+        points(x = dat_ss_srrt$ssd_idx, y = pp_median, col = "darkblue", pch = 17)
+        lines(x = dat_ss_srrt$ssd_idx, y = pp_median, col = "darkblue", pch = 17, lty = 2)
+        arrows(x0=dat_ss_srrt$ssd_idx, y0= pp_q97.5,
+               y1= pp_q2.5,
+               angle = 90, code = 3, length = 0.1, col = "darkblue")
+
+      }
+
+      res <- append(res, dat_ss_srrt[,1:2])
+    }
+    return(res)
+  }
+}
+
+
+#' Plot inhibition function
+#'
+#' Plots the proportions of no response in stop-signal data for different
+#' stop-signal delays (SSD).
+#'
+#' @param data A data frame. Needs to have the variables `subjects`, `rt`, `R`, and `SSD`.
+#' @param breaks Number of breaks for the stop-signal delay (SSD).
+#' @param subject If set to `NULL` (default), averaged data is plotted, otherwise individual plots are created.
+#' @param pp A data frame with posterior predictives as returned by predict.emc()
+#'
+#' @return A matrix with the plotted data
+#' @export
+#'
+plot_inhibition <- function(data, breaks = 5, subject = NULL, pp = NULL){
+
+  # function used to compute median SRRT and SE
+  mean_se <- function(x) {
+    c(mean = mean(x, na.rm = TRUE), se = sd(x, na.rm = TRUE)/sqrt(length(x)))
+  }
+  # function to create plot data
+  create_plot_dat <- function(dat_ss, breaks){
+    # create SSD intervals based on all data
+    dat_ss$SSD_cuts <- cut(dat_ss$SSD, breaks = breaks)
+    dat_ss$Inhib <- is.na(dat_ss$R)
+    # compute  median srrt for these SSD intervals
+    dat_ss_inhib <- as.data.frame(aggregate(Inhib ~ SSD_cuts, data = dat_ss, FUN = mean_se, drop= FALSE))
+    dat_ss_inhib$ssd_idx <- order(dat_ss_inhib$SSD_cuts)
+    return(dat_ss_inhib)
+  }
+
+  # all data
+  dat_ss <- data[is.finite(data$SSD),]
+  if(is.null(subject)){
+    dat_ss_inhib <- create_plot_dat(dat_ss, breaks = breaks)
+    # plot
+    plot(x=dat_ss_inhib$ssd_idx, y=dat_ss_inhib$Inhib[,"mean"], pch = 16,
+         xlab = "SSD", ylab = "P(inhibit)", bty = "n", xaxt = "n",
+         ylim = c(0,1))
+    axis(1, 1:nrow(dat_ss_inhib), labels = dat_ss_inhib$SSD_cuts)
+    lines(x=dat_ss_inhib$ssd_idx, y=dat_ss_inhib$Inhib[,"mean"])
+    if(is.null(pp)){
+      arrows(x0=dat_ss_inhib$ssd_idx, y0=dat_ss_inhib$Inhib[,"mean"]  + dat_ss_inhib$Inhib[,"se"],
+             y1= dat_ss_inhib$Inhib[,"mean"] - dat_ss_inhib$Inhib[,"se"],
+             angle = 90, code = 3, length = 0.1)
+    }
+
+    if(!is.null(pp)){
+      pp_ssd <- pp[is.finite(pp$SSD),]
+      for(p in 1:max(pp_ssd$postn)){
+        dat_ss_inhib_pp <- create_plot_dat(pp_ssd[pp_ssd$postn==p,], breaks = breaks)
+        if(p==1){
+          pp_inhib <- cbind(dat_ss_inhib_pp$Inhib[,"mean"], dat_ss_inhib_pp$ssd_idx)
+        } else {
+          pp_inhib <- rbind(pp_inhib, cbind(dat_ss_inhib_pp$Inhib[,"mean"], dat_ss_inhib_pp$ssd_idx))
+        }
+      }
+      # compute summary statistics of pp
+      pp_median <- tapply(pp_inhib[,1], pp_inhib[,2], median)
+      pp_q2.5 <- tapply(pp_inhib[,1], pp_inhib[,2], quantile, probs = c(0.025))
+      pp_q97.5 <- tapply(pp_inhib[,1], pp_inhib[,2], quantile, probs = c(0.975))
+      points(x = dat_ss_inhib$ssd_idx, y = pp_median, col = "darkblue", pch = 17)
+      lines(x = dat_ss_inhib$ssd_idx, y = pp_median, col = "darkblue", pch = 17, lty = 2)
+      arrows(x0=dat_ss_inhib$ssd_idx, y0= pp_q97.5,
+             y1= pp_q2.5,
+             angle = 90, code = 3, length = 0.1, col = "darkblue")
+
+    }
+
+    return(dat_ss_inhib[,1:2])
+  } else {
+    dat_ss_subject <- data[is.finite(data$SSD),]
+    # single participant
+    if(is.character(subject)) {
+      dat_ss_subject <- data[is.finite(data$SSD) & (data$subjects %in% subject),] # selected participants
+    }
+    # results
+    res <- list()
+    for(i in 1:length(unique(dat_ss_subject$subjects))){
+      dat_ss <- dat_ss_subject[dat_ss_subject$subjects == unique(dat_ss_subject$subjects)[i],]
+      dat_ss_inhib <- create_plot_dat(dat_ss, breaks = breaks)
+      # plot
+      plot(x=dat_ss_inhib$ssd_idx, y=dat_ss_inhib$Inhib[,"mean"], pch = 1,
+           xlab = "SSD", ylab = "P(inhibit)", bty = "n", xaxt = "n",
+           ylim = c(0,1),
+           main = unique(dat_ss_subject$subjects)[i])
+      lines(x=dat_ss_inhib$ssd_idx, y=dat_ss_inhib$Inhib[,"mean"])
+      axis(1, 1:nrow(dat_ss_inhib), labels = dat_ss_inhib$SSD_cuts)
+
+      if(!is.null(pp)){
+        if(!is.null(pp)){
+          pp_ssd <- pp[is.finite(pp$SSD) & pp$subjects == unique(dat_ss_subject$subjects)[i],]
+          for(p in 1:max(pp_ssd$postn)){
+            dat_ss_inhib_pp <- create_plot_dat(pp_ssd[pp_ssd$postn==p,], breaks = breaks)
+            if(p==1){
+              pp_inhib <- cbind(dat_ss_inhib_pp$Inhib[,"mean"], dat_ss_inhib_pp$ssd_idx)
+            } else {
+              pp_inhib <- rbind(pp_inhib, cbind(dat_ss_inhib_pp$Inhib[,"mean"], dat_ss_inhib_pp$ssd_idx))
+            }
+          }
+          # compute summary statistics of pp
+          pp_median <- tapply(pp_inhib[,1], pp_inhib[,2], median)
+          pp_q2.5 <- tapply(pp_inhib[,1], pp_inhib[,2], quantile, probs = c(0.025))
+          pp_q97.5 <- tapply(pp_inhib[,1], pp_inhib[,2], quantile, probs = c(0.975))
+          points(x = dat_ss_inhib$ssd_idx, y = pp_median, col = "darkblue", pch = 17)
+          lines(x = dat_ss_inhib$ssd_idx, y = pp_median, col = "darkblue", pch = 17, lty = 2)
+          arrows(x0=dat_ss_inhib$ssd_idx, y0= pp_q97.5,
+                 y1= pp_q2.5,
+                 angle = 90, code = 3, length = 0.1, col = "darkblue")
+
+        }
+      }
+
+      print(dat_ss_inhib[,1:2])
+      res <- append(res, dat_ss_inhib[,1:2])
+    }
+    return(res)
+  }
+}
