@@ -2,7 +2,7 @@
 % Please edit documentation in R/MRI.R
 \name{make_design_fmri}
 \alias{make_design_fmri}
-\title{Title}
+\title{Make an emc design for (f)MRI models}
 \usage{
 make_design_fmri(
   data,
@@ -27,11 +27,11 @@ make_design_fmri(
 
 \item{hrf_model}{The type of convolution used. Options, \code{glover} or \code{glover + derivative}}
 
-\item{...}{}
+\item{...}{Optional additional arguments}
 }
 \value{
 An emc design matrix that can be used in \code{make_emc}
 }
 \description{
-Title
+Make an emc design for (f)MRI models
 }

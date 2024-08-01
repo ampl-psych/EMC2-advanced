@@ -402,12 +402,21 @@ sampled_p_vector <- function(design,model=NULL,doMap=TRUE, add_da = FALSE, all_c
   # Makes an empty p_vector corresponding to model.
 {
   if(is.null(design)) return(NULL)
-  if(!is.null(design$Ffactors)){
+  if(!is.null(design$model)){
     design <- list(design)
   }
   out <- c()
   map_list <- list()
   for(j in 1:length(design)){
+    if(design[[j]]$model()$type == "MRI"){
+      sampled_p_names <- attr(design[[j]], "p_vector")
+      if(length(design) != 1){
+        sampled_p_names <- paste(j, sampled_p_names, sep = "|")
+      }
+      out <- c(out, sampled_p_names)
+      next
+    }
+
     cur_design <- design[[j]]
     if (is.null(model)) model <- cur_design$model
     if (is.null(model)) stop("Must supply model as not in design")
