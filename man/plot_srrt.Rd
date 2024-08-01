@@ -2,7 +2,7 @@
 % Please edit documentation in R/plotting.R
 \name{plot_srrt}
 \alias{plot_srrt}
-\title{Plot signal-response response times (SRRT)}
+\title{Plot signal-respond response times (SRRT)}
 \usage{
 plot_srrt(data, breaks = 5, subject = NULL, pp = NULL)
 }
@@ -19,5 +19,5 @@ plot_srrt(data, breaks = 5, subject = NULL, pp = NULL)
 A matrix with the plotted data
 }
 \description{
-Plot signal-response response times (SRRT)
+Plots the signal-respond response times.
 }

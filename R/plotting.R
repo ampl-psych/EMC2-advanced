@@ -1034,7 +1034,9 @@ coda_setmfrow <- function (Nchains = 1, Nparms = 1, nplots = 1, sepplot = FALSE)
 
 
 
-#' Plot signal-response response times (SRRT)
+#' Plot signal-respond response times (SRRT)
+#'
+#' Plots the signal-respond response times.
 #'
 #' @param data A data frame. Needs to have the variables `subjects`, `rt`, `R`, and `SSD`.
 #' @param breaks Number of breaks for the stop-signal delay (SSD).
