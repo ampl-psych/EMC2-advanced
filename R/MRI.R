@@ -69,7 +69,7 @@ make_fmri_design_matrix_wrap <- function(timeseries, events, factors, contrasts,
     }
     dm_sub <- do.call(rbind, dms_sub)
     dm_sub$subjects <- subject
-    all_dms[[subject]] <- dm_sub
+    all_dms[[as.character(sub)]] <- dm_sub
   }
   return(all_dms)
 }
