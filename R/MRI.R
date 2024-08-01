@@ -71,13 +71,25 @@ make_fmri_design_matrix_wrap <- function(timeseries, events, factors, contrasts,
   return(all_dms)
 }
 
+#' Make an emc design for (f)MRI models
+#'
+#' @param data The voxel or ROI timeseries (one at a time)
+#' @param events The event file
+#' @param model The fMRI model used. The default and only option at the moment is `normal_mri`
+#' @param factors A list. The factors used in the events files, e.g. list(E = c('acc', 'spd'))
+#' @param contrasts A list with one entry per contrast
+#' @param hrf_model The type of convolution used. Options, `glover` or `glover + derivative`
+#' @param ... Optional additional arguments
+#'
+#' @return An emc design matrix that can be used in `make_emc`
+#' @export
+#'
 make_design_fmri <- function(data,
                              events,
-                             model,
+                             model = normal_mri,
                              factors,
                              contrasts,
                              hrf_model='glover + derivative',
-                             add_intercept=FALSE,
                              ...) {
   dots <- list(...)
   design_matrix <- make_fmri_design_matrix_wrap(data, events, factors, contrasts, hrf_model)
@@ -99,7 +111,7 @@ make_design_fmri <- function(data,
       par_names <- c(par_names, par_names_from_events)
     }
   }
-  if(!('intercept' %in% par_names) & add_intercept) {
+  if(!('intercept' %in% par_names) & list(...)$add_intercept) {
     par_names <- c(par_names, 'intercept')
   }
 
