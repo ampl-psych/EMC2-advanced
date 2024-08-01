@@ -92,6 +92,7 @@ make_design_fmri <- function(data,
                              hrf_model='glover + derivative',
                              ...) {
   dots <- list(...)
+  dots$add_intercept <- FALSE
   design_matrix <- make_fmri_design_matrix_wrap(data, events, factors, contrasts, hrf_model)
   data_names <- colnames(data)[!colnames(data) %in% c('subjects', 'run', 'time')]
   # First create the design matrix
@@ -111,7 +112,7 @@ make_design_fmri <- function(data,
       par_names <- c(par_names, par_names_from_events)
     }
   }
-  if(!('intercept' %in% par_names) & list(...)$add_intercept) {
+  if(!('intercept' %in% par_names) & dots$add_intercept) {
     par_names <- c(par_names, 'intercept')
   }
 
