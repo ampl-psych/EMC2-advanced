@@ -1059,13 +1059,13 @@ plot_srrt <- function(data, breaks = 5, subject = NULL, pp = NULL){
     # create SSD intervals based on all data
     dat_ss$SSD_cuts <- cut(dat_ss$SSD, breaks = breaks)
     # compute  median srrt for these SSD intervals
-    dat_ss_srrt <- as.data.frame(aggregate(rt ~ SSD_cuts, data = dat_ss, FUN = median_se, drop = FALSE))
+    dat_ss_srrt <- as.data.frame(stats::aggregate(rt ~ SSD_cuts, data = dat_ss, FUN = median_se, drop = FALSE))
     dat_ss_srrt$ssd_idx <- order(dat_ss_srrt$SSD_cuts)
     # plot
     plot(x=dat_ss_srrt$ssd_idx, y=dat_ss_srrt$rt[,"median"], pch = 16,
          xlab = "SSD", ylab = "SRRT (median)", bty = "n", xaxt = "n",
          ylim = c(0, max(dat_ss_srrt$rt[,"median"], na.rm=TRUE)*1.5))
-    axis(1, 1:nrow(dat_ss_srrt), labels = dat_ss_srrt$SSD_cuts)
+    graphics::axis(1, 1:nrow(dat_ss_srrt), labels = dat_ss_srrt$SSD_cuts)
     lines(x=dat_ss_srrt$ssd_idx, y=dat_ss_srrt$rt[,"median"])
     if(is.null(pp)){
       arrows(x0=dat_ss_srrt$ssd_idx, y0=dat_ss_srrt$rt[,"median"]  + dat_ss_srrt$rt[,"se"],
@@ -1077,7 +1077,7 @@ plot_srrt <- function(data, breaks = 5, subject = NULL, pp = NULL){
       for(p in 1:max(pp_ssd$postn)){
         pp_ssd_p <- pp_ssd[pp_ssd$postn==p,]
         pp_ssd_p$SSD_cuts <- cut(pp_ssd_p$SSD, breaks = breaks)
-        dat_ss_srrt_pp <- as.data.frame(aggregate(rt ~ SSD_cuts, data = pp_ssd_p, FUN = median_se, drop = FALSE))
+        dat_ss_srrt_pp <- as.data.frame(stats::aggregate(rt ~ SSD_cuts, data = pp_ssd_p, FUN = median_se, drop = FALSE))
         dat_ss_srrt_pp$ssd_idx <- order(dat_ss_srrt_pp$SSD_cuts)
         if(p==1){
           pp_srrt <- cbind(dat_ss_srrt_pp$rt[,"median"], dat_ss_srrt_pp$ssd_idx)
@@ -1110,14 +1110,14 @@ plot_srrt <- function(data, breaks = 5, subject = NULL, pp = NULL){
       # create SSD intervals based on all data
       dat_ss$SSD_cuts <- cut(dat_ss$SSD, breaks = breaks)
       # compute  median srrt for these SSD intervals
-      dat_ss_srrt <- as.data.frame(aggregate(rt ~ SSD_cuts, data = dat_ss, FUN = median_se, drop = FALSE))
+      dat_ss_srrt <- as.data.frame(stats::aggregate(rt ~ SSD_cuts, data = dat_ss, FUN = median_se, drop = FALSE))
       dat_ss_srrt$ssd_idx <- order(dat_ss_srrt$SSD_cuts)
       # plot
       plot(x=dat_ss_srrt$ssd_idx, y=dat_ss_srrt$rt[,"median"], pch = 16,
            xlab = "SSD", ylab = "SRRT (median)", bty = "n", xaxt = "n",
            ylim = c(min(dat_ss_srrt$rt[,"median"], na.rm=TRUE)*0.25, max(dat_ss_srrt$rt[,"median"], na.rm=TRUE)*1.75),
            main = unique(dat_ss_subject$subjects)[i])
-      axis(1, 1:nrow(dat_ss_srrt), labels = dat_ss_srrt$SSD_cuts)
+      graphics::axis(1, 1:nrow(dat_ss_srrt), labels = dat_ss_srrt$SSD_cuts)
       lines(x=dat_ss_srrt$ssd_idx, y=dat_ss_srrt$rt[,"median"])
       if(is.null(pp)){
         arrows(x0=dat_ss_srrt$ssd_idx, y0=dat_ss_srrt$rt[,"median"]  + dat_ss_srrt$rt[,"se"],
@@ -1130,7 +1130,7 @@ plot_srrt <- function(data, breaks = 5, subject = NULL, pp = NULL){
         for(p in 1:max(pp_ssd$postn)){
           pp_ssd_p <- pp_ssd[pp_ssd$postn==p,]
           pp_ssd_p$SSD_cuts <- cut(pp_ssd_p$SSD, breaks = breaks)
-          dat_ss_srrt_pp <- as.data.frame(aggregate(rt ~ SSD_cuts, data = pp_ssd_p, FUN = median_se, drop = FALSE))
+          dat_ss_srrt_pp <- as.data.frame(stats::aggregate(rt ~ SSD_cuts, data = pp_ssd_p, FUN = median_se, drop = FALSE))
           dat_ss_srrt_pp$ssd_idx <- order(dat_ss_srrt_pp$SSD_cuts)
           if(p==1){
             pp_srrt <- cbind(dat_ss_srrt_pp$rt[,"median"], dat_ss_srrt_pp$ssd_idx)
@@ -1182,7 +1182,7 @@ plot_inhibition <- function(data, breaks = 5, subject = NULL, pp = NULL){
     dat_ss$SSD_cuts <- cut(dat_ss$SSD, breaks = breaks)
     dat_ss$Inhib <- is.na(dat_ss$R)
     # compute  median srrt for these SSD intervals
-    dat_ss_inhib <- as.data.frame(aggregate(Inhib ~ SSD_cuts, data = dat_ss, FUN = mean_se, drop= FALSE))
+    dat_ss_inhib <- as.data.frame(stats::aggregate(Inhib ~ SSD_cuts, data = dat_ss, FUN = mean_se, drop= FALSE))
     dat_ss_inhib$ssd_idx <- order(dat_ss_inhib$SSD_cuts)
     return(dat_ss_inhib)
   }
@@ -1195,7 +1195,7 @@ plot_inhibition <- function(data, breaks = 5, subject = NULL, pp = NULL){
     plot(x=dat_ss_inhib$ssd_idx, y=dat_ss_inhib$Inhib[,"mean"], pch = 16,
          xlab = "SSD", ylab = "P(inhibit)", bty = "n", xaxt = "n",
          ylim = c(0,1))
-    axis(1, 1:nrow(dat_ss_inhib), labels = dat_ss_inhib$SSD_cuts)
+    graphics::axis(1, 1:nrow(dat_ss_inhib), labels = dat_ss_inhib$SSD_cuts)
     lines(x=dat_ss_inhib$ssd_idx, y=dat_ss_inhib$Inhib[,"mean"])
     if(is.null(pp)){
       arrows(x0=dat_ss_inhib$ssd_idx, y0=dat_ss_inhib$Inhib[,"mean"]  + dat_ss_inhib$Inhib[,"se"],
@@ -1243,7 +1243,7 @@ plot_inhibition <- function(data, breaks = 5, subject = NULL, pp = NULL){
            ylim = c(0,1),
            main = unique(dat_ss_subject$subjects)[i])
       lines(x=dat_ss_inhib$ssd_idx, y=dat_ss_inhib$Inhib[,"mean"])
-      axis(1, 1:nrow(dat_ss_inhib), labels = dat_ss_inhib$SSD_cuts)
+      graphics::axis(1, 1:nrow(dat_ss_inhib), labels = dat_ss_inhib$SSD_cuts)
 
       if(!is.null(pp)){
         if(!is.null(pp)){
