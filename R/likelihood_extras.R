@@ -884,24 +884,24 @@ log_likelihood_race_ss <- function(p_vector,dadm,min_ll=log(1e-10))
   # Set up indices:
   # "is" = logical, "isp" pars/dadm index, "t" trials index, "ist" logical on trial index
   # "n_" number of integer
+  n_acc <- length(levels(dadm$lR))                   # total number of accumulators
 
   if (is.null(attr(pars,"ok")))
     ok <- !logical(dim(pars)[1]) else ok <- attr(pars,"ok")
-  if (!any(ok)) return(min_ll*nrow(dadm)/n_acc)
+  if (!any(ok)) return(min_ll*length(attr(dadm, "expand_winner")))
 
   # # spurious go winners on no-response trials
   # dadm$winner[is.na(dadm$R)] <- FALSE
 if (any(is.infinite(dadm$rt))) stop("BUGGER!")
 
   # Counts
-  n_acc <- length(levels(dadm$lR))                   # total number of accumulators
   n_accG <- sum(as.numeric(dadm[1:n_acc,"lI"])==2)   # go accumulators
   n_accST <- sum(as.numeric(dadm[1:n_acc,"lI"])==1)  # stop-triggered accumulators
   GOR <- levels(dadm$lR)[as.numeric(dadm[1:n_acc,"lI"])==2]
   if (n_accST>0) STR <- levels(dadm$lR)[as.numeric(dadm[1:n_acc,"lI"])==1]
 
   # Likelihood for all trials and for ok trials
-  allLL <- numeric(nrow(dadm)/n_acc)
+  allLL <- rep(-Inf,nrow(dadm)/n_acc)
   allok <- ok[c(dadm$lR==levels(dadm$lR)[1])] # used to put back into allLL
 
   # remove bad trials
