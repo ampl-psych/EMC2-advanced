@@ -2,7 +2,7 @@
 % Please edit documentation in R/model_SS_EXG.R
 \name{SSexG}
 \alias{SSexG}
-\title{Stop-signal exGaussian race}
+\title{Stop-signal ex-Gaussian race}
 \usage{
 SSexG()
 }
@@ -10,5 +10,21 @@ SSexG()
 A model list with all the necessary functions to sample
 }
 \description{
-Stop-signal exGaussian race
+Model file to estimate the ex-Gaussian race model for Stop-Signal data
+}
+\details{
+Model files are almost exclusively used in \code{design()}.
+
+Default values are used for all parameters that are not explicitly listed in the \code{formula}
+argument of \code{design()}.They can also be accessed with \code{SSexG()$p_types}.\tabular{llllll}{
+   \strong{Parameter} \tab \strong{Transform} \tab \strong{Natural scale} \tab \strong{Default} \tab \strong{Mapping} \tab \strong{Interpretation} \cr
+   \emph{mu} \tab log \tab [0, Inf] \tab log(.4) \tab  \tab mu parameter of ex-Gaussian go finishing time distribution \cr
+   \emph{sigma} \tab log \tab [0, Inf] \tab log(.05) \tab  \tab sigma parameter of ex-Gaussian go finishing time distribution \cr
+   \emph{tau} \tab log \tab [0, Inf] \tab log(.1) \tab  \tab tau parameter of ex-Gaussian go finishing time distribution \cr
+   \emph{muS} \tab log \tab [0, Inf] \tab log(.3) \tab  \tab mu parameter of ex-Gaussian stopping finishing time distribution \cr
+   \emph{sigmaS} \tab log \tab [0, Inf] \tab log(.025) \tab  \tab sigma parameter of ex-Gaussian stopping finishing time distribution \cr
+   \emph{tauS} \tab log \tab [0, Inf] \tab log(.05) \tab  \tab tau parameter of ex-Gaussian stopping finishing time distribution \cr
+   \emph{tf} \tab probit \tab [0, 1] \tab qnorm(0) \tab  \tab Trigger failure probability \cr
+   \emph{gf} \tab probit \tab [0, 1] \tab qnorm(0) \tab  \tab Go failure probability \cr
+}
 }
