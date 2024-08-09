@@ -54,9 +54,12 @@ Imports:
     utils,
     lpSolve,
     tmvtnorm,
-    MomTrunc
+    MomTrunc,
+    RcppNumerical
 LinkingTo: 
-    Rcpp
+    Rcpp,
+    RcppEigen,
+    RcppNumerical
 Depends: 
     R (>= 2.10)
 LazyData: true
