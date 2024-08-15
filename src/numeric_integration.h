@@ -56,7 +56,7 @@ NumericVector f_integrate(Rcpp::NumericMatrix pars,
   double err_est;
   int err_code;
   double res = integrate(f, lower, upper, err_est, err_code);
-  NumericVector out{res, err_est, err_code};
+  NumericVector out{res, err_est, (double) err_code};
   return out;
 }
 
