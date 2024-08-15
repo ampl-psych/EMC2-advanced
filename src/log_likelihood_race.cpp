@@ -368,7 +368,9 @@ double c_log_likelihood_race_missing(NumericMatrix pars, DataFrame data,
     loss[loss == log(1 - exp(min_ll))] = min_ll;
     lds[!winner] = loss;
   }
-  lds[is_na(lds)] = min_ll;
+  lds[is_na(lds) | (winner & is_infinite(rts))] = min_ll;
+  lds[!winner & is_infinite(rts)] = 0;
+
 
   // Calculate truncation?
   double LT = 0;
