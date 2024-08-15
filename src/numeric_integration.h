@@ -6,7 +6,7 @@
 #include <RcppNumerical.h>
 using namespace Numer;
 
-class LBA_f : public Func {
+class race_f : public Func {
 private:
   Rcpp::NumericMatrix pars;
   Rcpp::LogicalVector winner;
@@ -15,7 +15,7 @@ private:
   double min_ll;
 
 public:
-  LBA_f(Rcpp::NumericMatrix pars_,
+  race_f(Rcpp::NumericMatrix pars_,
         Rcpp::LogicalVector winner_,
         Rcpp::NumericVector (*dfun_)(Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::LogicalVector, double),
         Rcpp::NumericVector (*pfun_)(Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::LogicalVector, double),
@@ -52,11 +52,11 @@ NumericVector f_integrate(Rcpp::NumericMatrix pars,
                    double lower,
                    double upper)
 {
-  LBA_f f(pars, winner, dfun, pfun, min_ll);
+  race_f f(pars, winner, dfun, pfun, min_ll);
   double err_est;
   int err_code;
   double res = integrate(f, lower, upper, err_est, err_code);
-  NumericVector out{res, err_est, err_code};
+  NumericVector out{res, err_est, (double) err_code};
   return out;
 }
 
