@@ -39,13 +39,14 @@ LNRnoC <- function() {
   )
 }
 
-#' LNRM: LNR with missing values
+#' MLNR: LNR with missing values
 #'
 #' @return A model list with all the necessary functions to sample
 #' @export
 MLNR <- function(){
   list(
     type="RACE",
+    c_name = "MLNR",
     p_types=c("m" = 1,"s" = log(1),"t0" = log(0),pContaminant=qnorm(0)),
     p_types=c("m","s","t0","pContaminant"),
     Ntransform=function(x,use=NULL) {
