@@ -652,6 +652,8 @@ pairs_posterior <- function(emc, selection="alpha", scale_subjects=TRUE,
 #' @param data A dataframe. Experimental data used, needed for the design mapping
 #' @param design A design list. Created using ``design``.
 #' @param p_vector Named vector of parameter values (typically created with ``sampled_p_vector(design)``)
+#' @param use_c Logical, use C version of likelihood (may not be available for all models)
+#' @param c_min_ll minimum likelihood to use with C version of likelihood, default 1e-10
 #' @param range Numeric. The max and min will be p_vector + range/2 and p_vector - range/2, unless specified in p_min or p_max.
 #' @param layout A vector indicating which layout to use as in par(mfrow = layout). If NA, will automatically generate an appropriate layout.
 #' @param p_min Named vector. If specified will instead use these values for minimum range of the selected parameters.
@@ -678,7 +680,9 @@ pairs_posterior <- function(emc, selection="alpha", scale_subjects=TRUE,
 
 #' @export
 
-profile_plot <- function(data, design, p_vector, range = .5, layout = NA,
+profile_plot <- function(data, design, p_vector,
+                         use_c = FALSE,c_min_ll=1e-10,
+                         range = .5, layout = NA,
                          p_min = NULL,p_max = NULL, use_par = NULL,
                          n_point=100,n_cores=1, round = 3,
                          true_plot_args = list(),
@@ -686,24 +690,59 @@ profile_plot <- function(data, design, p_vector, range = .5, layout = NA,
 
 {
   dots <- list(...)
-  lfun <- function(i,x,p_vector,pname,dadm) {
+
+  lfun <- function(i,x,p_vector,pname,dadm,clist=NULL) {
     p_vector[pname] <- x[i]
-    attr(dadm,"model")()$log_likelihood(p_vector,dadm)
+    if (!is.null(clist)) {
+      calc_ll(t(as.matrix(p_vector)), dadm, constants = clist$constants,
+        designs = clist$designs, type = clist$type, p_types = clist$p_types,
+        min_ll = clist$min_ll,group_idx = clist$parameter_indices)
+    } else attr(dadm,"model")()$log_likelihood(p_vector,dadm)
   }
-  if(!identical(names(p_min), names(p_max))) stop("p_min and p_max should be specified for the same parameters")
+
+  if(!identical(names(p_min), names(p_max)))
+    stop("p_min and p_max should be specified for the same parameters")
   if(!is.null(names(p_min)) & length(p_min) == length(use_par)) names(p_min) <- use_par
   if(!is.null(names(p_max)) & length(p_max) == length(use_par)) names(p_max) <- use_par
   if(is.null(use_par)) use_par <- names(p_vector)
   if(any(is.na(layout))){
-    par(mfrow = coda_setmfrow(Nchains = 1, Nparms = length(use_par),
-                              nplots = 1))
+    par(mfrow = coda_setmfrow(Nchains = 1, Nparms = length(use_par),nplots = 1))
   } else{par(mfrow=layout)}
   if(is.null(dots$dadm)){
     dadm <- design_model(data, design, verbose = FALSE)
   } else{
     dadm <- dots$dadm
   }
-  out <- data.frame(true = rep(NA, length(use_par)), max = rep(NA, length(use_par)), miss = rep(NA, length(use_par)))
+
+  if (use_c) {
+    c_name <- attr(dadm,"model")()$c_name
+    if (is.null(c_name)) stop("C likelihood not available.")
+    p_types <- names(attr(dadm, "model")()$p_types)
+    designs <- list()
+    for (p in c(p_types, attr(attr(dadm, "adaptive"), "aptypes"))) {
+      designs[[p]] <-
+        attr(dadm, "designs")[[p]][attr(attr(dadm, "designs")[[p]], "expand"), ,drop = FALSE]
+    }
+    constants <- attr(dadm, "constants")
+    if (is.null(constants)) constants <- NA
+    n_trials = nrow(dadm)
+    if (c_name == "DDM") {
+      levels(dadm$R) <- c(0, 1)
+      pars <- get_pars(proposals[1, ], dadm)
+      pars <- cbind(pars, dadm$R)
+      parameter_char <- apply(pars, 1, paste0, collapse = "\t")
+      parameter_factor <- factor(parameter_char, levels = unique(parameter_char))
+      parameter_indices <- split(seq_len(nrow(pars)), f = parameter_factor)
+      names(parameter_indices) <- 1:length(parameter_indices)
+    } else {
+      parameter_indices <- list()
+    }
+    clist <- list(constants = constants, designs = designs, type = c_name,
+                  p_types = p_types, min_ll = c_min_ll, group_idx = parameter_indices)
+  } else clist <- NULL
+
+  out <- data.frame(true = rep(NA, length(use_par)), max = rep(NA, length(use_par)),
+                    miss = rep(NA, length(use_par)))
   rownames(out) <- use_par
   for(p in 1:length(p_vector)){
     cur_name <- names(p_vector)[p]
@@ -724,7 +763,8 @@ profile_plot <- function(data, design, p_vector, range = .5, layout = NA,
       x <- seq(pmin_cur,pmax_cur,length.out=n_point)
       x <- c(x, cur_par)
       x <- unique(sort(x))
-      ll <- unlist(mclapply(1:length(x),lfun,dadm=dadm,x=x,p_vector=p_vector,pname=cur_name,mc.cores = n_cores))
+      ll <- unlist(mclapply(1:length(x),lfun,dadm=dadm,x=x,p_vector=p_vector,
+                            pname=cur_name,mc.cores = n_cores,clist=clist))
       do.call(plot, c(list(x,ll), fix_dots_plot(add_defaults(dots, type="l",xlab=cur_name,ylab="LL"))))
       do.call(abline, c(list(v=cur_par), fix_dots_plot(add_defaults(true_plot_args, lty = 2))))
       out[cur_name,] <- c(p_vector[cur_name], x[which.max(ll)], p_vector[cur_name] - x[which.max(ll)])

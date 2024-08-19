@@ -8,6 +8,8 @@ profile_plot(
   data,
   design,
   p_vector,
+  use_c = FALSE,
+  c_min_ll = 1e-10,
   range = 0.5,
   layout = NA,
   p_min = NULL,
@@ -26,6 +28,10 @@ profile_plot(
 \item{design}{A design list. Created using \code{design}.}
 
 \item{p_vector}{Named vector of parameter values (typically created with \code{sampled_p_vector(design)})}
+
+\item{use_c}{Logical, use C version of likelihood (may not be available for all models)}
+
+\item{c_min_ll}{minimum likelihood to use with C version of likelihood, default 1e-10}
 
 \item{range}{Numeric. The max and min will be p_vector + range/2 and p_vector - range/2, unless specified in p_min or p_max.}
 
