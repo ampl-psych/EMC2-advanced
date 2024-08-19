@@ -193,10 +193,6 @@ ARDMnoC <- function(){
 MRDMnoC <- function(){
   list(
     type="RACE",
-<<<<<<< HEAD
-=======
-    c_name = "MRDM",
->>>>>>> e729665fa4b86961fd204837e7c2f0bb68aea642
     p_types=c("v" = log(1),"B" = log(1),"A" = log(0),"t0" = log(0),"s" = log(1),
               pContaminant=qnorm(0)),
     p_types=c("v","B","A","t0","s","pContaminant"),
