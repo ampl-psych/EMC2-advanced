@@ -369,7 +369,7 @@ double c_log_likelihood_race_missing(NumericMatrix pars, DataFrame data,
     lds[!winner] = loss;
   }
   lds[is_na(lds) | (winner & is_infinite(rts))] = min_ll;
-  lds[!winner & is_infinite(rts)] = 0;
+  lds[(!winner) & is_infinite(rts)] = 0;
 
 
   // Calculate truncation?
@@ -537,14 +537,14 @@ double c_log_likelihood_race_missing(NumericMatrix pars, DataFrame data,
 
       NumericVector pc = f_integrate(pi, idx, dfun, pfun, exp(min_ll), LT, LC);
       double p;
-      if (pc[2] != 0 | traits::is_nan<REALSXP>(pc[0])) {
+      if (pc[2] != 0 || traits::is_nan<REALSXP>(pc[0])) {
         p = NA_REAL;
       } else{
         p = std::max(0.0 ,std::min(pc[0],1.0));
       }
 
       double cf;
-      if ((p != 0) & !(LT==0 & UT==R_PosInf)) {
+      if (p != 0 && !(LT==0 && UT==R_PosInf)) {
         cf = pr_pt(pi, idx, dfun, pfun, exp(min_ll), LT, UT);
       } else {
         cf = 1;
@@ -554,16 +554,16 @@ double c_log_likelihood_race_missing(NumericMatrix pars, DataFrame data,
         p *= cf;
       }
 
-      if (!traits::is_na<REALSXP>(p) & n_acc > 1) {
+      if (!traits::is_na<REALSXP>(p) && n_acc > 1) {
         for (int j = 1; j < n_acc; j++) {
           idx.fill(0);
           idx[j] = 1;
           pc = f_integrate(pi, idx, dfun, pfun, exp(min_ll), LT, LC);
-          if (pc[2] != 0 | traits::is_nan<REALSXP>(pc[0])) {
+          if (pc[2] != 0 || traits::is_nan<REALSXP>(pc[0])) {
             p = NA_REAL;
             break;
           }
-          if (pc[0] != 0.0 & !(LT == 0 & UT == R_PosInf)) {
+          if (pc[0] != 0.0 && !(LT == 0 && UT == R_PosInf)) {
             cf = pr_pt(pi, idx, dfun, pfun, exp(min_ll), LT, UT);
           } else{
             cf = 1;
@@ -615,14 +615,14 @@ double c_log_likelihood_race_missing(NumericMatrix pars, DataFrame data,
 
       NumericVector pc = f_integrate(pi, idx, dfun, pfun, exp(min_ll), UC, UT);
       double p;
-      if (pc[2] != 0 | traits::is_nan<REALSXP>(pc[0])) {
+      if (pc[2] != 0 || traits::is_nan<REALSXP>(pc[0])) {
         p = NA_REAL;
       } else{
         p = std::max(0.0,std::min(pc[0],1.0));
       }
 
       double cf;
-      if (p != 0 & !(LT==0 & UT==R_PosInf)) {
+      if (p != 0 && !(LT==0 && UT==R_PosInf)) {
         cf = pr_pt(pi, idx, dfun, pfun, exp(min_ll), LT, UT);
       } else {
         cf = 1;
@@ -632,16 +632,16 @@ double c_log_likelihood_race_missing(NumericMatrix pars, DataFrame data,
         p *= cf;
       }
 
-      if (!traits::is_na<REALSXP>(p) & n_acc > 1) {
+      if (!traits::is_na<REALSXP>(p) && n_acc > 1) {
         for (int j = 1; j < n_acc; j++) {
           idx.fill(0);
           idx[j] = 1;
           pc = f_integrate(pi, idx, dfun, pfun, exp(min_ll), UC, UT);
-          if (pc[2] != 0 | traits::is_nan<REALSXP>(pc[0])) {
+          if (pc[2] != 0 || traits::is_nan<REALSXP>(pc[0])) {
             p = NA_REAL;
             break;
           }
-          if (pc[0] != 0.0 & !(LT == 0 & UT == R_PosInf)) {
+          if (pc[0] != 0.0 && !(LT == 0 && UT == R_PosInf)) {
             cf = pr_pt(pi, idx, dfun, pfun, exp(min_ll), LT, UT);
           } else{
             cf = 1;
@@ -697,7 +697,7 @@ double c_log_likelihood_race_missing(NumericMatrix pars, DataFrame data,
       if (traits::is_na<REALSXP>(pc)) {
         p = NA_REAL;
       } else{
-        if (pc != 0.0 & !(LT == 0 & UT == R_PosInf)) {
+        if (pc != 0.0 && !(LT == 0 && UT == R_PosInf)) {
           cf = pr_pt(pi, idx, dfun, pfun, exp(min_ll), LT, UT);
         } else{
           cf = 1;
@@ -709,7 +709,7 @@ double c_log_likelihood_race_missing(NumericMatrix pars, DataFrame data,
           p = NA_REAL;
         }
 
-        if (!traits::is_na<REALSXP>(p) & n_acc > 1) {
+        if (!traits::is_na<REALSXP>(p) && n_acc > 1) {
           for (int j = 1; j < n_acc; j++) {
             idx.fill(0);
             idx[j] = 1;
@@ -719,7 +719,7 @@ double c_log_likelihood_race_missing(NumericMatrix pars, DataFrame data,
               p = NA_REAL;
               break;
             }
-            if (pc != 0 & !(LT == 0 & UT == R_PosInf)) {
+            if (pc != 0 && !(LT == 0 && UT == R_PosInf)) {
               cf = pr_pt(pi, idx, dfun, pfun, exp(min_ll), LT, UT);
             } else {
               cf = 1;

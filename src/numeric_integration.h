@@ -6,7 +6,7 @@
 #include <RcppNumerical.h>
 using namespace Numer;
 
-class LBA_f : public Func {
+class race_f : public Func {
 private:
   Rcpp::NumericMatrix pars;
   Rcpp::LogicalVector winner;
@@ -15,7 +15,7 @@ private:
   double min_ll;
 
 public:
-  LBA_f(Rcpp::NumericMatrix pars_,
+  race_f(Rcpp::NumericMatrix pars_,
         Rcpp::LogicalVector winner_,
         Rcpp::NumericVector (*dfun_)(Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::LogicalVector, double),
         Rcpp::NumericVector (*pfun_)(Rcpp::NumericVector, Rcpp::NumericMatrix, Rcpp::LogicalVector, double),
@@ -52,7 +52,7 @@ NumericVector f_integrate(Rcpp::NumericMatrix pars,
                    double lower,
                    double upper)
 {
-  LBA_f f(pars, winner, dfun, pfun, min_ll);
+  race_f f(pars, winner, dfun, pfun, min_ll);
   double err_est;
   int err_code;
   double res = integrate(f, lower, upper, err_est, err_code);
@@ -68,11 +68,11 @@ double pr_pt(Rcpp::NumericMatrix pars,
              double LT,
              double UT) {
   NumericVector pr = f_integrate(pars, winner, dfun, pfun, min_ll, 0, R_PosInf);
-  if (pr[2] != 0 | traits::is_nan<REALSXP>(pr[0])) return NA_REAL;
+  if ((pr[2] != 0) || traits::is_nan<REALSXP>(pr[0])) return NA_REAL;
   if (pr[0] == 0.0) return 0.0;
 
   NumericVector pt = f_integrate(pars, winner, dfun, pfun, min_ll, LT, UT);
-  if (pt[2] != 0 |traits::is_nan<REALSXP>(pt[0])) return NA_REAL;
+  if ((pt[2] != 0) || traits::is_nan<REALSXP>(pt[0])) return NA_REAL;
 
   double out = std::max(0.0, std::min(pr[0], 1.0)) / std::max(0.0, std::min(pt[0], 1.0));
   if (traits::is_infinite<REALSXP>(out)) return NA_REAL;
@@ -90,11 +90,11 @@ double pLU(Rcpp::NumericMatrix pars,
            double UC,
            double UT) {
   NumericVector pL = f_integrate(pars, winner, dfun, pfun, min_ll, LT, LC);
-  if (pL[2] != 0 | traits::is_nan<REALSXP>(pL[0])) {
+  if ((pL[2] != 0) | traits::is_nan<REALSXP>(pL[0])) {
     return NA_REAL;
   }
   NumericVector pU = f_integrate(pars, winner, dfun, pfun, min_ll, UC, UT);
-  if (pU[2] != 0 | traits::is_nan<REALSXP>(pU[0])) {
+  if ((pU[2] != 0) | traits::is_nan<REALSXP>(pU[0])) {
     return NA_REAL;
   }
   double out = std::max(0.0, std::min(pL[0], 1.0)) + std::max(0.0, std::min(pU[0], 1.0));
