@@ -15,10 +15,14 @@ advantage_pars <- function(pars,SV,nr,pname="v")  {
       s[i,j,] <- apply(q[c(notj[i],j),],2,sum)
     }
   }
+
   # Beta difference mapping
-  if (!all(c("DS","DD") %in% dimnames(pars)[[2]])) d <- (1+as.vector(d))/2 else
-    d <- pbeta((1+as.vector(d))/2,exp((pars[,"DS"]+pars[,"DD"])/2),
-               exp((pars[,"DS"]-pars[,"DD"])/2))
+  if (!all(c("DS","DD") %in% dimnames(pars)[[2]])) d <- (1+as.vector(d))/2 else {
+    DS <- rep(pars[,"DS"],each=na)
+    DD <- rep(pars[,"DD"],each=na)
+    d <- pbeta((1+as.vector(d))/2,exp((DS+DD)/2),exp((DS-DD)/2))
+  }
+
   # expand pars
   rpars <- apply(pars[,dimnames(pars)[[2]]!=pname],2,rep,each=na)
   v <- rep(pars[,pname],each=na) +

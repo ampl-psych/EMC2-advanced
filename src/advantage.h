@@ -98,7 +98,7 @@ NumericMatrix advantagepars(NumericMatrix pars, NumericVector SV, int nr, String
       }
     }
   }
-  // Rcout << d_mat;
+
   NumericMatrix pars_out(pars.nrow()*na, pars.ncol());
   colnames(pars_out) = colnames(pars);
 
@@ -106,9 +106,12 @@ NumericMatrix advantagepars(NumericMatrix pars, NumericVector SV, int nr, String
   LogicalVector is_ADpar = contains(colnames(pars), pname);
   NumericVector pars_curr(pars.nrow());
   NumericVector d = as<NumericVector>(d_mat);
-  for(int j = 0; j < DS.length(); j ++){
+  NumericVector DS2 = rep_each(DS, na);
+  NumericVector DD2 = rep_each(DD, na);
+
+  for(int j = 0; j < DS2.length(); j ++){
     if(sum(is_DS) > 0){
-      d[j] = R::pbeta((d[j] + 1)/2, exp((DS[j]+DD[j])/2), exp((DS[j]-DD[j])/2), true, false);
+      d[j] = R::pbeta((d[j] + 1)/2, exp((DS2[j]+DD2[j])/2), exp((DS2[j]-DD2[j])/2), true, false);
     }else{
       d[j] = (d[j] + 1)/2;
     }
