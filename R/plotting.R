@@ -725,10 +725,9 @@ profile_plot <- function(data, design, p_vector,
     }
     constants <- attr(dadm, "constants")
     if (is.null(constants)) constants <- NA
-    n_trials = nrow(dadm)
     if (c_name == "DDM") {
       levels(dadm$R) <- c(0, 1)
-      pars <- get_pars(proposals[1, ], dadm)
+      pars <- get_pars(p_vector, dadm)
       pars <- cbind(pars, dadm$R)
       parameter_char <- apply(pars, 1, paste0, collapse = "\t")
       parameter_factor <- factor(parameter_char, levels = unique(parameter_char))
