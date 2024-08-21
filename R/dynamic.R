@@ -6,7 +6,7 @@ run_delta_i <- function(q0,alpha,target,winner,return_extras=FALSE) {
 
   q <- pe <- numeric(length(target))
   q[1] <- q0
-  alpha <- pnorm(alpha)
+  alpha <- exp(alpha)
   for (i in 2:length(q)) {
     if (is.na(target[i-1]) | winner[i-1] != 1) {
       pe[i-1] <- NA
@@ -95,7 +95,7 @@ run_d1b <- function(base,scale,q0,alpha,target,return_extras=FALSE) {
 
   q <- pe <- numeric(length(target))
   q[1] <- q0
-  alpha <- pnorm(alpha)
+  alpha <- exp(alpha)
   for (i in 2:length(q)) {
     # if (is.na(target[i-1])) { # remove? not needed for RL
     #   pe[i-1] <- NA
@@ -545,7 +545,7 @@ get_adaptive <- function(pname,p_vector,data,design,return_dadm=TRUE,return_p=TR
 # One step versions for data simulation,
 
 one_delta <- function(q0,alpha,target) {
-  q0 + pnorm(alpha)*(target-q0)
+  q0 + exp(alpha)*(target-q0)
 }
 
 

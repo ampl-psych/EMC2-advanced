@@ -45,7 +45,7 @@ NumericVector run_delta_i_dyn(double q0, double alpha, NumericVector target, Num
 
   NumericVector q(target.length());
   q[0] = q0;
-  double alpha_use = R::pnorm(alpha, 0, 1, TRUE, FALSE);
+  double alpha_use = exp(alpha); //R::pnorm(alpha, 0, 1, TRUE, FALSE);
   double pe;
   for(int t = 1; t < q.length(); t ++){
     if(NumericVector::is_na(target[t-1]) || winner[t-1] != 1){
@@ -218,7 +218,7 @@ NumericVector run_delta_i_map(NumericVector q0, NumericVector alpha, NumericVect
       q[t] = q[t-1];
     } else{
       pe = target[t-1] - q[t-1];
-      q[t] = q[t-1] + R::pnorm(alpha[t-1], 0, 1, TRUE, FALSE)*pe;
+      q[t] = q[t-1] + exp(alpha[t-1])*pe; //R::pnorm(alpha[t-1], 0, 1, TRUE, FALSE)*pe;
     }
   }
   return(q);
