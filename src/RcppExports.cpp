@@ -25,6 +25,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// advantageparameters
+NumericMatrix advantageparameters(NumericMatrix pars, NumericVector SV, int nr, String pname);
+RcppExport SEXP _EMC2_advantageparameters(SEXP parsSEXP, SEXP SVSEXP, SEXP nrSEXP, SEXP pnameSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type pars(parsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type SV(SVSEXP);
+    Rcpp::traits::input_parameter< int >::type nr(nrSEXP);
+    Rcpp::traits::input_parameter< String >::type pname(pnameSEXP);
+    rcpp_result_gen = Rcpp::wrap(advantageparameters(pars, SV, nr, pname));
+    return rcpp_result_gen;
+END_RCPP
+}
 // c_map_p
 NumericMatrix c_map_p(NumericVector p_vector, CharacterVector p_types, List designs, int n_trials, List dynamic, DataFrame data);
 RcppExport SEXP _EMC2_c_map_p(SEXP p_vectorSEXP, SEXP p_typesSEXP, SEXP designsSEXP, SEXP n_trialsSEXP, SEXP dynamicSEXP, SEXP dataSEXP) {
@@ -358,6 +372,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_EMC2_advantagepars", (DL_FUNC) &_EMC2_advantagepars, 4},
+    {"_EMC2_advantageparameters", (DL_FUNC) &_EMC2_advantageparameters, 4},
     {"_EMC2_c_map_p", (DL_FUNC) &_EMC2_c_map_p, 6},
     {"_EMC2_calc_ll", (DL_FUNC) &_EMC2_calc_ll, 8},
     {"_EMC2_d_DDM_c", (DL_FUNC) &_EMC2_d_DDM_c, 6},

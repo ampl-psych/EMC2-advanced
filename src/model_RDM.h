@@ -157,6 +157,7 @@ NumericVector prdm_c(NumericVector rts, NumericMatrix pars, LogicalVector idx, d
 
 
 NumericMatrix Ntransform_rdm(NumericMatrix x, CharacterVector use, DataFrame data, List adaptive) {
+
   NumericMatrix out(clone(x));
   LogicalVector col_idx = contains_multiple(colnames(x), {"SD","SS","DD","DS"});
   LogicalVector use_idx = contains_multiple(colnames(x), use);
@@ -173,10 +174,15 @@ NumericMatrix Ntransform_rdm(NumericMatrix x, CharacterVector use, DataFrame dat
   List advantage = data.attr("advantage");
   if(advantage.length() > 0){
     String par_name = advantage.names();
-    String S_name = advantage[0];
-    NumericVector SV = data[S_name];
     CharacterVector R = data["R"];
-    out = advantagepars(out, SV,unique(R).length(),par_name);
+    String S_name = advantage[0];
+    if (S_name == "parameter") {
+      NumericVector SV = out(_,colname_index(x,par_name));
+      out = advantageparameters(out, SV,unique(R).length(),par_name);
+    } else {
+      NumericVector SV = data[S_name];
+      out = advantagepars(out, SV,unique(R).length(),par_name);
+    }
   }
   return(out);
 }
@@ -222,7 +228,6 @@ NumericVector pWald(NumericVector t, NumericVector v,
 
 NumericMatrix Ntransform_trdm(NumericMatrix x, CharacterVector use, DataFrame data, List adaptive) {
   NumericMatrix out(clone(x));
-
   LogicalVector use_idx = contains_multiple(colnames(x), use);
   LogicalVector not_exp_idx = contains(colnames(x), "pGuess");
   for(int i = 0; i < x.ncol(); i ++){
@@ -241,9 +246,14 @@ NumericMatrix Ntransform_trdm(NumericMatrix x, CharacterVector use, DataFrame da
   if(advantage.length() > 0){
     String par_name = advantage.names();
     String S_name = advantage[0];
-    NumericVector SV = data[S_name];
     CharacterVector R = data["R"];
-    out = advantagepars(out, SV,unique(R).length(),par_name);
+    if (S_name == par_name) { // use parameter as SV
+      NumericVector SV = x(_,colname_index(x,par_name));
+      out = advantagepars(out, SV,unique(R).length(),par_name);
+    } else {
+      NumericVector SV = data[S_name];
+      out = advantagepars(out, SV,unique(R).length(),par_name);
+    }
   }
   return(out);
 }

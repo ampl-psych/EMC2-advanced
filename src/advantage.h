@@ -130,6 +130,65 @@ NumericMatrix advantagepars(NumericMatrix pars, NumericVector SV, int nr, String
   return(pars_out);
 }
 
+// Used when advantage = "parameter", no transforms done.
+
+// [[Rcpp::export]]
+NumericMatrix advantageparameters(NumericMatrix pars, NumericVector SV, int nr, String pname){
+  int na = nr -1;
+  int nt = pars.nrow()/nr;
+  // Contains is just a custom ''which'' function, which returns a logical vector
+  // with only true at the match.
+  LogicalVector is_AS = contains(colnames(pars), "AS");
+  LogicalVector is_AD = contains(colnames(pars), "AD");
+  // I have yet to find a better way to go through a matrix and get matching columns
+  // Works better with dataframes that are treated as lists.
+  // But this way is definitely fastests (since it's only one explicit loop,
+  // instead of four one for each search). Just more code.
+  NumericVector AS(pars.nrow());
+  NumericVector AD(pars.nrow());
+  for(int i = 0; i < pars.ncol(); i ++){
+    if(is_AS[i] == TRUE){
+      AS = pars(_, i);
+    }
+    if(is_AD[i] == TRUE){
+      AD = pars(_, i);
+    }
+  }
+  // Set up our empty matrices
+  NumericMatrix q(nr, nt, SV.begin());
+
+  // These two are now matrices instead of arrays, with the first dimension
+  // equal to the first*second dimension of the array.
+  NumericMatrix s_mat(na*nr, nt);
+  NumericMatrix d_mat(na*nr, nt);
+  IntegerVector notm;
+  IntegerVector nrs = seq(0, nr-1);
+  for (int k = 0; k < nt; k++) {
+    for(int l = 0; l < na; l++){
+      for(int m = 0; m < nr; m++){
+        notm = nrs[nrs != m];
+        d_mat(m * na + l, k) =  q(m, k) - q(notm[l], k);
+        s_mat(m * na + l, k) = q(notm[l], k) + q(m, k);
+      }
+    }
+  }
+
+  NumericMatrix pars_out(pars.nrow()*na, pars.ncol());
+  colnames(pars_out) = colnames(pars);
+
+  // Find out for which parameter I need to do the advantage transformation
+  LogicalVector is_ADpar = contains(colnames(pars), pname);
+  NumericVector pars_curr(pars.nrow());
+  NumericVector d = as<NumericVector>(d_mat);
+  NumericVector s = as<NumericVector>(s_mat);
+  for(int n = 0; n < pars.ncol(); n++){
+    if(is_ADpar[n] == TRUE){ // If it's the advantage parameter
+      pars_out(_,n) = (rep_each(AS, na) * s + rep_each(AD, na)*d)/2;
+    } else pars_out(_,n) = rep_each(pars(_, n), na);
+  }
+  return(pars_out);
+}
+
 
 #endif
 

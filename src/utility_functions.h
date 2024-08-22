@@ -12,6 +12,15 @@ LogicalVector contains(CharacterVector sv, std::string txt) {
   return res;
 }
 
+int colname_index(NumericMatrix m, std::string txt) {
+  int res;
+  CharacterVector cnams = colnames(m);
+  for (int i = 0; i < m.cols(); i ++) {
+    if (cnams[i] == txt) res = i;
+  }
+  return res;
+}
+
 NumericVector pnorm_multiple(NumericVector x){
   NumericVector out(x.size());
   for(int i = 0; i < x.size(); i++){

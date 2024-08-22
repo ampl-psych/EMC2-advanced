@@ -151,16 +151,19 @@ NumericMatrix Ntransform_lba(NumericMatrix x, CharacterVector use, DataFrame dat
   if(adaptive.length() > 0){
     out = map_adaptive(adaptive, out, data);
   }
-
   List advantage = data.attr("advantage");
   if(advantage.length() > 0){
     String par_name = advantage.names();
-    String S_name = advantage[0];
-    NumericVector SV = data[S_name];
     CharacterVector R = data["R"];
-    out = advantagepars(out, SV,unique(R).length(),par_name);
+    String S_name = advantage[0];
+    if (S_name == "parameter") {
+      NumericVector SV = out(_,colname_index(x,par_name));
+      out = advantageparameters(out, SV,unique(R).length(),par_name);
+    } else {
+      NumericVector SV = data[S_name];
+      out = advantagepars(out, SV,unique(R).length(),par_name);
+    }
   }
-
   return(out);
 }
 

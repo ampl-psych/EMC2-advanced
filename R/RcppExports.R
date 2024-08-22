@@ -5,6 +5,10 @@ advantagepars <- function(pars, SV, nr, pname) {
     .Call(`_EMC2_advantagepars`, pars, SV, nr, pname)
 }
 
+advantageparameters <- function(pars, SV, nr, pname) {
+    .Call(`_EMC2_advantageparameters`, pars, SV, nr, pname)
+}
+
 c_map_p <- function(p_vector, p_types, designs, n_trials, dynamic, data) {
     .Call(`_EMC2_c_map_p`, p_vector, p_types, designs, n_trials, dynamic, data)
 }

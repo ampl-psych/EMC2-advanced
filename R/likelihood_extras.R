@@ -18,13 +18,13 @@ log_likelihood_race_advantage <- function(p_vector,dadm,min_ll=log(1e-10))
   rt <- rep(dadm$rt,each=na)
 
   # log pdf of winning response accumulators
-  pdf <- matrix(attr(dadm,"model")()$dfun(rt=rt[winner],pars=pars[winner,]),
+  pdf <- matrix(attr(dadm,"model")()$dfun(rt=rt[winner],pars=pars[winner,,drop=FALSE]),
                   nrow=na,ncol=nt)
   # cdf (NOT log) of winning response accumulators
-  if (na>1) cdfw <- matrix(attr(dadm,"model")()$pfun(rt=rt[winner],pars=pars[winner,]),
+  if (na>1) cdfw <- matrix(attr(dadm,"model")()$pfun(rt=rt[winner],pars=pars[winner,,drop=FALSE]),
                             nrow=na,ncol=nt)
   # cdf (NOT log) of loosing response accumulators
-  cdfl <- array(attr(dadm,"model")()$pfun(rt=rt[!winner],pars=pars[!winner,]),
+  cdfl <- array(attr(dadm,"model")()$pfun(rt=rt[!winner],pars=pars[!winner,,drop=FALSE]),
                dim=c(na,na,nt))
   ia <- 1:na
   if (na==1) ll <- as.vector(log(pdf)) + log(1-as.vector(cdfl)) else {
@@ -69,11 +69,11 @@ log_likelihood_race_trdm <- function(p_vector,dadm,min_ll=log(1e-10))
   }
 
   # pdf of timer (only take one of nr rows as only one timing accumulator)
-  pdfTW <- pars[winner,"pGuess"] * attr(dadm,"model")()$dfunT(rt=rt[winner],pars=pars[winner,])
+  pdfTW <- pars[winner,"pGuess"] * attr(dadm,"model")()$dfunT(rt=rt[winner],pars=pars[winner,,drop=FALSE])
   # pdf of evidence winner
-  pdfEW <- attr(dadm,"model")()$dfun(rt=rt[winner],pars=pars[winner,])
+  pdfEW <- attr(dadm,"model")()$dfun(rt=rt[winner],pars=pars[winner,,drop=FALSE])
   # survivors of timing accumulator in case it looses
-  surviveT <- 1-attr(dadm,"model")()$pfunT(rt=rt[winner],pars=pars[winner,])
+  surviveT <- 1-attr(dadm,"model")()$pfunT(rt=rt[winner],pars=pars[winner,,drop=FALSE])
   # survivors of all evidence accumulators (need winner survivor in case timer wins)
   surviveE <-  1-attr(dadm,"model")()$pfun(rt=rt,pars=pars)
 

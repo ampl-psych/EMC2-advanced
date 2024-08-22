@@ -175,6 +175,9 @@ design <- function(formula = NULL,factors = NULL,Rlevels = NULL,model,data=NULL,
   nams <- unlist(lapply(formula,function(x)as.character(stats::terms(x)[[2]])))
   if (!all(sort(names(model()$p_types)) %in% sort(nams)) & is.null(custom_p_vector)){
     p_types <- model()$p_types
+    if (!is.null(advantage) && (advantage[[1]]=="parameter")) { # Change default
+      p_types["AD"] <- p_types["AS"] <- 0
+    }
     not_specified <- sort(names(p_types))[!sort(names(p_types)) %in% sort(nams)]
     message(paste0("Parameter(s) ", paste0(not_specified, collapse = ", "), " not specified in formula and assumed constant."))
     additional_constants <- p_types[not_specified]
@@ -805,13 +808,14 @@ design_model <- function(data,design,model=NULL,
     if (!is.list(design$Clist)) stop("Clist must be a list")
     if (is.null(design$adaptive)) # same contrasts for all p_types
       ptypes <- model()$p_types else ptypes <- c(model()$p_types,
-                                                 setNames(numeric(length(design$adaptive$B$aptypes)),design$adaptive$B$aptypes))
+        setNames(numeric(length(design$adaptive$B$aptypes)),design$adaptive$B$aptypes))
     if (!is.null(design$advantage)) {
       if (length(design$advantage)>1) stop("advantage argument should be length 1")
       if (!(names(design$advantage) %in% names(model()$p_types)))
         stop("advantage parameter type ",names(design$advantage)," not in the model")
-      if (!all(design$advantage[[1]] %in% names(design$Ffunctions)))
-        stop("advantage stimulus value function not present")
+      if (design$advantage[1]!="parameter" &&
+          !all(design$advantage[[1]] %in% names(design$Ffunctions)))
+        stop("Advantage stimulus value function not present")
     }
     if (!is.list(design$Clist[[1]])[1]) { # same contrasts for all p_types
       design$Clist <- stats::setNames(lapply(1:length(names(ptypes)),

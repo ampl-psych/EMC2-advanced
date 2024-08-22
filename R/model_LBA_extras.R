@@ -113,8 +113,11 @@ ALBAnoC <- function(){
     Ttransform = function(pars,dadm) {
       pars <- cbind(pars,b=pars[,"B"] + pars[,"A"])
       if (!is.null(attr(dadm,"adaptive"))) pars <- do_adaptive(pars,dadm)
-      pars <- advantage_pars(pars,dadm[attr(dadm,"advantage")[[1]]],
-        length(levels(dadm$lR)),names(attr(dadm,"advantage"))[1])
+      if (attr(dadm,"advantage")[[1]] == "parameter")
+        pars <- advantage_parameters(pars,pars[,names(attr(dadm,"advantage"))[1]],
+          length(levels(dadm$lR)),names(attr(dadm,"advantage"))[1]) else
+        pars <- advantage_pars(pars,dadm[attr(dadm,"advantage")[[1]]],
+          length(levels(dadm$lR)),names(attr(dadm,"advantage"))[1])
       attr(pars,"ok") <- (pars[,"sv"] > 0) & (pars[,"B"] >= 0) &
         (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0)
       pars
@@ -164,8 +167,11 @@ ALBA <- function(){
     Ttransform = function(pars,dadm) {
       pars <- cbind(pars,b=pars[,"B"] + pars[,"A"])
       if (!is.null(attr(dadm,"adaptive"))) pars <- do_adaptive(pars,dadm)
-      pars <- advantage_pars(pars,dadm[attr(dadm,"advantage")[[1]]],
-        length(levels(dadm$lR)),names(attr(dadm,"advantage"))[1])
+      if (attr(dadm,"advantage")[[1]] == "parameter")
+        pars <- advantage_parameters(pars,pars[,names(attr(dadm,"advantage"))[1]],
+          length(levels(dadm$lR)),names(attr(dadm,"advantage"))[1]) else
+        pars <- advantage_pars(pars,dadm[attr(dadm,"advantage")[[1]]],
+          length(levels(dadm$lR)),names(attr(dadm,"advantage"))[1])
       attr(pars,"ok") <- (pars[,"sv"] > 0) & (pars[,"B"] >= 0) &
         (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0)
       pars
