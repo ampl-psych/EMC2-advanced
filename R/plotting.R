@@ -663,6 +663,7 @@ pairs_posterior <- function(emc, selection="alpha", scale_subjects=TRUE,
 #' @param n_cores Number of likelihood points evenly spaced between the minimum and maximum likelihood range.
 #' @param true_plot_args A list. Optional additional arguments that can be passed to plot.default for the plotting of the true vertical line.
 #' @param round Integer. To how many digits will the output be rounded.
+#' @param use_c Logical, default TRUE, if available use C to calculate likelihood
 #' @param ... Optional additional arguments that can be passed to plot.default.
 #' @return Vector with highest likelihood point, input and mismatch between true and highest point
 #' @examples
@@ -681,7 +682,7 @@ pairs_posterior <- function(emc, selection="alpha", scale_subjects=TRUE,
 #' @export
 
 profile_plot <- function(data, design, p_vector,
-                         use_c = FALSE,c_min_ll=1e-10,
+                         use_c = TRUE,
                          range = .5, layout = NA,
                          p_min = NULL,p_max = NULL, use_par = NULL,
                          n_point=100,n_cores=1, round = 3,
@@ -691,12 +692,13 @@ profile_plot <- function(data, design, p_vector,
 {
   dots <- list(...)
 
-  lfun <- function(i,x,p_vector,pname,dadm,clist=NULL) {
+  lfun <- function(i,x,p_vector,pname,dadm,model) {
     p_vector[pname] <- x[i]
-    if (!is.null(clist)) {
-      calc_ll(t(as.matrix(p_vector)), dadm, constants = clist$constants,
-        designs = clist$designs, type = clist$type, p_types = clist$p_types,
-        min_ll = clist$min_ll,group_idx = clist$parameter_indices)
+    if (!is.null(model)) {
+      calc_ll_manager(t(as.matrix(p_vector)), dadm, design$model)
+      # calc_ll(t(as.matrix(p_vector)), dadm, constants = clist$constants,
+      #   designs = clist$designs, type = clist$type, p_types = clist$p_types,
+      #   min_ll = clist$min_ll,group_idx = clist$parameter_indices)
     } else attr(dadm,"model")()$log_likelihood(p_vector,dadm)
   }
 
@@ -714,32 +716,8 @@ profile_plot <- function(data, design, p_vector,
     dadm <- dots$dadm
   }
 
-  if (use_c) {
-    c_name <- attr(dadm,"model")()$c_name
-    if (is.null(c_name)) stop("C likelihood not available.")
-    p_types <- names(attr(dadm, "model")()$p_types)
-    designs <- list()
-    for (p in c(p_types, attr(attr(dadm, "adaptive"), "aptypes"))) {
-      designs[[p]] <-
-        attr(dadm, "designs")[[p]][attr(attr(dadm, "designs")[[p]], "expand"), ,drop = FALSE]
-    }
-    constants <- attr(dadm, "constants")
-    if (is.null(constants)) constants <- NA
-    if (c_name == "DDM") {
-      levels(dadm$R) <- c(0, 1)
-      pars <- get_pars(p_vector, dadm)
-      pars <- cbind(pars, dadm$R)
-      parameter_char <- apply(pars, 1, paste0, collapse = "\t")
-      parameter_factor <- factor(parameter_char, levels = unique(parameter_char))
-      parameter_indices <- split(seq_len(nrow(pars)), f = parameter_factor)
-      names(parameter_indices) <- 1:length(parameter_indices)
-    } else {
-      parameter_indices <- list()
-    }
-    clist <- list(constants = constants, designs = designs, type = c_name,
-                  p_types = p_types, min_ll = c_min_ll, group_idx = parameter_indices)
-  } else clist <- NULL
-
+  if (!use_c) model <- NULL else
+    if (!is.null(design$model()$c_name)) model <- design$model else model <- NULL
   out <- data.frame(true = rep(NA, length(use_par)), max = rep(NA, length(use_par)),
                     miss = rep(NA, length(use_par)))
   rownames(out) <- use_par
@@ -763,7 +741,7 @@ profile_plot <- function(data, design, p_vector,
       x <- c(x, cur_par)
       x <- unique(sort(x))
       ll <- unlist(mclapply(1:length(x),lfun,dadm=dadm,x=x,p_vector=p_vector,
-                            pname=cur_name,mc.cores = n_cores,clist=clist))
+                            pname=cur_name,mc.cores = n_cores,model=model))
       do.call(plot, c(list(x,ll), fix_dots_plot(add_defaults(dots, type="l",xlab=cur_name,ylab="LL"))))
       do.call(abline, c(list(v=cur_par), fix_dots_plot(add_defaults(true_plot_args, lty = 2))))
       out[cur_name,] <- c(p_vector[cur_name], x[which.max(ll)], p_vector[cur_name] - x[which.max(ll)])
