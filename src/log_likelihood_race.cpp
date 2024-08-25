@@ -433,7 +433,6 @@ double c_log_likelihood_race_missing(NumericMatrix pars, DataFrame data,
         }
       }
       NumericVector tmp = f_integrate(pifast, winnerfast(_,i), dfun, pfun, exp(min_ll), LT, LC);
-      // not sure whether always works, might still have to work around errors?
       ldstofixfast[i] = std::log(std::max(0.0, std::min(tmp[0], 1.0)));
     }
     lds[tofixfast] = ldstofixfast;
@@ -468,7 +467,6 @@ double c_log_likelihood_race_missing(NumericMatrix pars, DataFrame data,
         }
       }
       NumericVector tmp = f_integrate(pislow, winnerslow(_,i), dfun, pfun, exp(min_ll), UC, UT);
-      // not sure whether always works, might still have to work around errors?
       ldstofixslow[i] = std::log(std::max(0.0, std::min(tmp[0], 1.0)));
     }
     lds[tofixslow] = ldstofixslow;
