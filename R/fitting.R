@@ -772,10 +772,10 @@ make_emc <- function(data,design,model=NULL,
                           n_chains=3,compress=TRUE,rt_resolution=0.02,
                           prior_list = NULL,
                           grouped_pars = NULL,
-                          par_groups=NULL,
-                          n_factors=NULL,constraintMat = NULL, ...){
+                          par_groups=NULL, ...){
 
   # arguments for future compatibility
+  n_factors <- NULL
   formula <- NULL
   Lambda_mat <- NULL
   B_mat <- NULL
@@ -893,7 +893,7 @@ make_emc <- function(data,design,model=NULL,
     if (is.null(n_factors)) stop("Must specify n_factors for factor type")
     out <- pmwgs(dadm_list,variant_funs, n_factors = n_factors, nuisance = nuisance,
                  nuisance_non_hyper = nuisance_non_hyper, grouped_pars = grouped_pars,
-                 constraintMat = constraintMat)
+                 Lambda_mat = Lambda_mat)
   } else if (type == "SEM"){
     out <- pmwgs(dadm_list,variant_funs, Lambda_mat = Lambda_mat, B_mat = B_mat, K_mat = K_mat, G_mat = G_mat,
                  covariates = covariates, nuisance = nuisance, nuisance_non_hyper = nuisance_non_hyper, grouped_pars = grouped_pars)
