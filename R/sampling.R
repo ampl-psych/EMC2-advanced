@@ -283,7 +283,8 @@ run_stage <- function(pmwgs,
       pmwgs$sampler_nuis$samples$idx <- j
     }
     if(any(grouped)){
-      subj_prior <-sum(apply(pars_comb$alpha, 2, FUN = function(x) mvtnorm::dmvnorm(x, pars$tmu, sigma = pars$tvar, log = TRUE)))
+      subj_prior <-sum(apply(pars_comb$alpha, 2, FUN = function(x)
+        mvtnorm::dmvnorm(x, pars$tmu, sigma = force_symmetric(pars$tvar), log = TRUE,checkSymmetry = FALSE)))
       grouped_pars <- new_particle_group(pmwgs$data, particles_grouped, pmwgs$prior$prior_grouped,
                                          chains_cov_grouped, mix_grouped, epsilon_grouped,
                                          pmwgs$samples$grouped_pars[,j-1] , pars_comb$alpha, pmwgs$par_names,
@@ -398,10 +399,13 @@ new_particle <- function (s, data, num_particles, eff_mu = NULL,
       lw <- calc_ll_manager(ll_proposals[,is_shared], dadm = data, likelihood_func)
     }
     lw_total <- lw + prev_ll - lw[1] # make sure lls from other components are included
-    lp <- mvtnorm::dmvnorm(x = proposals[,idx], mean = group_mu[idx], sigma = group_var[idx,idx], log = TRUE)
-    prop_density <- mvtnorm::dmvnorm(x = proposals[,idx], mean = subj_mu[idx], sigma = var_subj[idx,idx])
+    lp <- pmax(0,mvtnorm::dmvnorm(x = proposals[,idx], mean = group_mu[idx],
+                           sigma = force_symmetric(group_var[idx,idx]), log = TRUE,checkSymmetry = FALSE))
+    prop_density <- mvtnorm::dmvnorm(x = proposals[,idx], mean = subj_mu[idx],
+                                     sigma = force_symmetric(var_subj[idx,idx]),checkSymmetry = FALSE)
     if(length(unq_components) > 1){
-      prior_density <- mvtnorm::dmvnorm(x = proposals, mean = group_mu, sigma = group_var, log = TRUE)
+      prior_density <- mvtnorm::dmvnorm(x = proposals, mean = group_mu,
+                                        sigma = force_symmetric(group_var), log = TRUE,checkSymmetry = FALSE)
     } else{
       prior_density <- lp
     }
@@ -414,7 +418,8 @@ new_particle <- function (s, data, num_particles, eff_mu = NULL,
     }
     else {
       #if(is.null(eff_alpha)){
-      eff_density <- mvtnorm::dmvnorm(x = proposals[,idx], mean = eff_mu[idx], sigma = eff_var[idx,idx])
+      eff_density <- mvtnorm::dmvnorm(x = proposals[,idx], mean = eff_mu[idx],
+                                      sigma = force_symmetric(eff_var[idx,idx]),checkSymmetry = FALSE)
       # } else{
       #   eff_density <- sn::dmsn(x = proposals[,idx], xi = eff_mu[idx], Omega = eff_var[idx,idx],
       #                            alpha = eff_alpha, tau = eff_tau)
@@ -422,6 +427,22 @@ new_particle <- function (s, data, num_particles, eff_mu = NULL,
     }
     lm <- log(mix_proportion[1] * exp(lp) + (mix_proportion[2] * prop_density) + (mix_proportion[3] * eff_density))
     infnt_idx <- is.infinite(lm)
+
+    if (all(infnt_idx)) {
+      idx <<- idx
+      proposals <<- proposals
+      group_mu <<- group_mu
+      group_var <<- group_var
+      subj_mu <<- subj_mu
+      var_subj <<- var_subj
+      eff_mu <<- eff_mu
+      eff_var <<- eff_var
+      lw <<- lw
+      lp <<- lp
+      prop_density <<- prop_density
+      eff_density <<- eff_density
+    }
+
     lm[infnt_idx] <- min(lm[!infnt_idx])
     # Calculate weights and center
     l <- lw_total + prior_density - lm
@@ -457,8 +478,10 @@ new_particle_group <- function(data, num_particles, prior,
   }
   lws <- parallel::mcmapply(calc_ll_for_group, proposals_list, data, MoreArgs = list(ll = likelihood_func), mc.cores = n_cores)
   lw <- rowSums(lws)
-  lp <- mvtnorm::dmvnorm(x = proposals, mean = prior_mu, sigma = prior_var, log = TRUE)
-  prop_density <- mvtnorm::dmvnorm(x = proposals, mean = prev_mu, sigma = chains_cov)
+  lp <- mvtnorm::dmvnorm(x = proposals, mean = prior_mu,
+                         sigma = force_symmetric(prior_var), log = TRUE,checkSymmetry = FALSE)
+  prop_density <- mvtnorm::dmvnorm(x = proposals, mean = prev_mu,
+                                   sigma = force_symmetric(chains_cov),checkSymmetry = FALSE)
   lm <- log(mix_proportion[1] * exp(lp) + mix_proportion[2] * prop_density)
   prior_density <- lp + subj_prior
   l <- lw + prior_density - lm
@@ -505,13 +528,12 @@ numbers_from_proportion <- function(mix_proportion, num_particles = 1000) {
   return(numbers)
 }
 
-
 particle_draws <- function(n, mu, covar, alpha = NULL, tau= NULL) {
   if (n <= 0) {
     return(NULL)
   }
   if(is.null(alpha)){
-    return(mvtnorm::rmvnorm(n, mu, covar))
+    return(mvtnorm::rmvnorm(n, mu, force_symmetric(covar),checkSymmetry = FALSE))
   }
   # else{
   #   return(sn::rmsn(n, xi = mu, Omega = covar, alpha = alpha, tau = tau))

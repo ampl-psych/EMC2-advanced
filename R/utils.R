@@ -27,3 +27,11 @@
 #   out <- which(da[,cname]==typei)
 #   c(out,rep(NA,maxn-length(out)))
 # }
+
+force_symmetric <- function(m) {
+  # print(sort(m[upper.tri(m)]-t(m)[upper.tri(m)]))
+  m[upper.tri(m)] <- m[lower.tri(m)]
+  m
+}
+
+
