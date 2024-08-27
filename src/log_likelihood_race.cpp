@@ -350,7 +350,10 @@ double c_log_likelihood_race_missing(NumericMatrix pars, DataFrame data,
   CharacterVector R = data["R"];
   NumericVector pCont = pars(_ , pars.ncol() - 1);
   NumericVector lds_exp(n_out);
-  const int n_acc = unique(R).length();
+  int n_acc = unique(R).length();
+  if (any(is_na(R))) {
+    n_acc -= 1;
+  }
   if(sum(contains(data.names(), "NACC")) == 1){
     NumericVector lR = data["lR"];
     NumericVector NACC = data["NACC"];
@@ -369,7 +372,7 @@ double c_log_likelihood_race_missing(NumericMatrix pars, DataFrame data,
     lds[!winner] = loss;
   }
   lds[is_na(lds) | (winner & is_infinite(rts))] = min_ll;
-  lds[(!winner) & is_infinite(rts)] = 0;
+  lds[(!winner) & (is_infinite(rts) | is_na(rts))] = 0;
 
 
   // Calculate truncation?
@@ -430,7 +433,6 @@ double c_log_likelihood_race_missing(NumericMatrix pars, DataFrame data,
         }
       }
       NumericVector tmp = f_integrate(pifast, winnerfast(_,i), dfun, pfun, exp(min_ll), LT, LC);
-      // not sure whether always works, might still have to work around errors?
       ldstofixfast[i] = std::log(std::max(0.0, std::min(tmp[0], 1.0)));
     }
     lds[tofixfast] = ldstofixfast;
@@ -465,7 +467,6 @@ double c_log_likelihood_race_missing(NumericMatrix pars, DataFrame data,
         }
       }
       NumericVector tmp = f_integrate(pislow, winnerslow(_,i), dfun, pfun, exp(min_ll), UC, UT);
-      // not sure whether always works, might still have to work around errors?
       ldstofixslow[i] = std::log(std::max(0.0, std::min(tmp[0], 1.0)));
     }
     lds[tofixslow] = ldstofixslow;
@@ -492,11 +493,15 @@ double c_log_likelihood_race_missing(NumericMatrix pars, DataFrame data,
 
     for (int i = 0; i < sum(tofixno); i++) {
       NumericMatrix pino(n_acc, pars.ncol());
-      for (int j =0; i < n_acc; j++) {
-        pino(j,_) = mparsno(i * n_acc + j,_);
+      if (n_acc  == 1) {
+        pino(0,_) = mparsno(i,_);
+      } else {
+        for (int j = 0; j < n_acc; j++) {
+          pino(j,_) = mparsno(i * n_acc + j,_);
+        }
       }
-      NumericVector tmpslow = f_integrate(mparsno, winnerno(_,i), dfun, pfun, exp(min_ll), UC, UT);
-      NumericVector tmpfast = f_integrate(mparsno, winnerno(_,i), dfun, pfun, exp(min_ll), LT, LC);
+      NumericVector tmpslow = f_integrate(pino, winnerno(_,i), dfun, pfun, exp(min_ll), UC, UT);
+      NumericVector tmpfast = f_integrate(pino, winnerno(_,i), dfun, pfun, exp(min_ll), LT, LC);
       double tmp = tmpslow[0] + tmpfast[0];
 
       ldstofixno[i] = std::log(std::max(0.0, std::min(tmp, 1.0)));
@@ -523,16 +528,16 @@ double c_log_likelihood_race_missing(NumericMatrix pars, DataFrame data,
     LogicalMatrix winnerfastu(n_acc, winnerfastuvec.length() / n_acc, winnerfastuvec.begin());
 
     tofixfast = (winner & nortfastu);
-    NumericVector ldstofixfast(tofixfast.length());
+    NumericVector ldstofixfast(sum(tofixfast));
 
-    for (int i = 0; i < sum(ldstofixfast); i++) {
+    for (int i = 0; i < sum(tofixfast); i++) {
       NumericMatrix pi(n_acc, pars.nrow());
 
       for (int j = 0; j < n_acc; j++) {
         pi(j,_) = mpars(i * n_acc + j,_);
       }
 
-      LogicalVector idx(n_acc);
+      LogicalVector idx(n_acc, 0);
       idx[0] = 1;
 
       NumericVector pc = f_integrate(pi, idx, dfun, pfun, exp(min_ll), LT, LC);
@@ -601,9 +606,9 @@ double c_log_likelihood_race_missing(NumericMatrix pars, DataFrame data,
     LogicalMatrix winnerslowu(n_acc, winnerslowuvec.length() / n_acc, winnerslowuvec.begin());
 
     tofixslow = (winner & nortslowu);
-    NumericVector ldstofixslow(tofixslow.length());
+    NumericVector ldstofixslow(sum(tofixslow));
 
-    for (int i = 0; i < sum(ldstofixslow); i++) {
+    for (int i = 0; i < sum(tofixslow); i++) {
       NumericMatrix pi(n_acc, pars.nrow());
 
       for (int j = 0; j < n_acc; j++) {
@@ -668,7 +673,7 @@ double c_log_likelihood_race_missing(NumericMatrix pars, DataFrame data,
   if (is_true(any(nortnou))) {
     NumericMatrix mpars(sum(nortnou), pars.ncol());
 
-    for (int i = 0, j = 0; i < sum(nortnou); i++) {
+    for (int i = 0, j = 0; i < nortnou.length(); i++) {
       if (nortnou[i]) {
         mpars(j,_) = pars(i,_);
         j++;
@@ -679,10 +684,10 @@ double c_log_likelihood_race_missing(NumericMatrix pars, DataFrame data,
     LogicalMatrix winnernou(n_acc, winnernouvec.length() / n_acc, winnernouvec.begin());
 
     LogicalVector tofix = (winner & nortnou);
-    NumericVector ldstofix(tofix.length());
+    NumericVector ldstofix(sum(tofix));
 
-    for (int i = 0; i < sum(ldstofix); i++) {
-      NumericMatrix pi(n_acc, pars.nrow());
+    for (int i = 0; i < sum(tofix); i++) {
+      NumericMatrix pi(n_acc, pars.ncol());
 
       for (int j = 0; j < n_acc; j++) {
         pi(j,_) = mpars(i * n_acc + j,_);
@@ -773,12 +778,12 @@ double c_log_likelihood_race_missing(NumericMatrix pars, DataFrame data,
           pi(j,_) = tpars(i * n_acc + j , _ );
         }
 
-        cf[i] = pr_pt(pi, winnertrunc, dfun, pfun, exp(min_ll), LT, UT);
+        cf[i] = pr_pt(pi, winnertrunc(_,i), dfun, pfun, exp(min_ll), LT, UT);
       }
     }
     NumericVector cf_log = rep_each(log(cf), n_acc);
     NumericVector cf_exp = c_expand(cf_log, expand_nort);
-    LogicalVector fix = winner & !is_na(cf_exp) & !is_nan(cf_exp) & is_finite(cf_exp);
+    LogicalVector fix = winner & !is_na(cf_exp) & is_finite(cf_exp);
     if (is_true(any(fix))) {
       lds[fix] = lds[fix] + cf_exp[fix];
     }
