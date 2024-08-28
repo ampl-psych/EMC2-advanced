@@ -23,13 +23,13 @@ LBAnoC <- function(){
       pars <- cbind(pars,b=pars[,"B"] + pars[,"A"])
       if (!is.null(attr(dadm,"adaptive"))) pars <- do_adaptive(pars,dadm)
       attr(pars,"ok") <- (pars[,"sv"] > 0) & (pars[,"B"] >= 0) &
-        (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0)
+        (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0)
       pars
     },
     # Random function for racing accumulator
     rfun=function(lR=NULL,pars) {
       ok <- (pars[,"sv"] > 0) & (pars[,"B"] >= 0) &
-        (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0)
+        (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0)
       if (is.null(lR)) ok else rLBA(lR,pars,posdrift=TRUE,ok=ok)
     },
     # Density function (PDF) for single accumulator
@@ -119,13 +119,13 @@ ALBAnoC <- function(){
         pars <- advantage_pars(pars,dadm[attr(dadm,"advantage")[[1]]],
           length(levels(dadm$lR)),names(attr(dadm,"advantage"))[1])
       attr(pars,"ok") <- (pars[,"sv"] > 0) & (pars[,"B"] >= 0) &
-        (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0)
+        (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0)
       pars
     },
     # Random function for racing accumulator
     rfun=function(lR=NULL,pars) {
       ok <- (pars[,"sv"] > 0) & (pars[,"B"] >= 0) &
-        (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0)
+        (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0)
       if (is.null(lR)) ok else rALBA(lR,pars,posdrift=TRUE,ok=ok)
     },
     # Density function (PDF) for single accumulator
@@ -173,13 +173,13 @@ ALBA <- function(){
         pars <- advantage_pars(pars,dadm[attr(dadm,"advantage")[[1]]],
           length(levels(dadm$lR)),names(attr(dadm,"advantage"))[1])
       attr(pars,"ok") <- (pars[,"sv"] > 0) & (pars[,"B"] >= 0) &
-        (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0)
+        (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0)
       pars
     },
     # Random function for racing accumulator
     rfun=function(lR=NULL,pars) {
       ok <- (pars[,"sv"] > 0) & (pars[,"B"] >= 0) &
-        (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0)
+        (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0)
       if (is.null(lR)) ok else rALBA(lR,pars,posdrift=TRUE,ok=ok)
     },
     # Density function (PDF) for single accumulator
@@ -524,14 +524,14 @@ BE2lbaB <- function(){
       pnams <- c("A",dimnames(pars)[[2]][substr(dimnames(pars)[[2]],1,2)=="DT"],"B")
       pars[,pnams] <- t(apply(pars[,pnams],1,cumsum))
       dimnames(pars)[[2]][dimnames(pars)[[2]]=="B"] <- "b"
-      attr(pars,"ok") <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0) &
+      attr(pars,"ok") <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0) &
         (abs(pars[,"v"])<100) & ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0)
       # ( abs(pars[,"v"])< 10) & ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0) & (abs(pars[,"b"])<10)
       pars
     },
     # Random function for racing accumulator
     rfun=function(lR=NULL,pars) {
-      ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0) &
+      ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0) &
         ( pars[,"v"] > 0 & pars[,"v"] < 10 ) & ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0) & (abs(pars[,"b"])<10)
       if (is.null(lR)){
         return(ok)
@@ -578,14 +578,14 @@ BE2lbaBP <- function(){
       pars <- cbind(pars,b=pars[,"B"] + pars[,"A"])
       isDT <- substr(dimnames(pars)[[2]],1,2)=="DT"
       pars[,isDT] <- pars[,isDT]*pars[,"b"]
-      attr(pars,"ok") <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0) &
+      attr(pars,"ok") <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0) &
         (abs(pars[,"v"])<100) & ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0)
       # ( pars[,"v"] > 0 & pars[,"v"] < 10 ) &  ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0) & (abs(pars[,"b"])<10)
       pars
     },
     # Random function for racing accumulator
     rfun=function(lR=NULL,pars) {
-      ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0) &
+      ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0) &
         ( abs(pars[,"v"])< 10) & ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0) & (abs(pars[,"b"])<10)
       if (is.null(lR)) ok else rLBA_BE(pars,ok=ok)
     },
@@ -625,14 +625,14 @@ TC2lbaB <- function(){
       pnams <- c("A",dimnames(pars)[[2]][substr(dimnames(pars)[[2]],1,2)=="DT"],"B")
       pars[,pnams] <- t(apply(pars[,pnams],1,cumsum))
       dimnames(pars)[[2]][dimnames(pars)[[2]]=="B"] <- "b"
-      attr(pars,"ok") <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0) &
+      attr(pars,"ok") <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0) &
         (abs(pars[,"v"])<100) & ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0)
       # ( pars[,"v"] > 0 & pars[,"v"] < 10 ) &  ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0) & (abs(pars[,"b"])<10)
       pars
     },
     # Random function for racing accumulator
     rfun=function(lR=NULL,pars) {
-      ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0) &
+      ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0) &
         ( abs(pars[,"v"])< 10) & ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0) & (abs(pars[,"b"])<10)
       if (is.null(lR)) ok else rLBA_TC(pars,ok=ok)
     },
@@ -672,14 +672,14 @@ BE3lbaB <- function(){
       pnams <- c("A",dimnames(pars)[[2]][substr(dimnames(pars)[[2]],1,2)=="DT"],"B")
       pars[,pnams] <- t(apply(pars[,pnams],1,cumsum))
       dimnames(pars)[[2]][dimnames(pars)[[2]]=="B"] <- "b"
-      attr(pars,"ok") <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0) &
+      attr(pars,"ok") <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0) &
         (abs(pars[,"v"])<100) & ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0)
       # ( pars[,"v"] > 0 & pars[,"v"] < 10 ) &  ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0) & (abs(pars[,"b"])<10)
       pars
     },
     # Random function for racing accumulator
     rfun=function(lR=NULL,pars) {
-      ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0) &
+      ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0) &
         ( abs(pars[,"v"])< 10) & ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0) & (abs(pars[,"b"])<10)
       if (is.null(lR)) ok else rLBA_BE(pars,ok=ok)
     },
@@ -721,14 +721,14 @@ BE3lbaBP <- function(){
       pars <- cbind(pars,b=pars[,"B"] + pars[,"A"])
       isDT <- substr(dimnames(pars)[[2]],1,2)=="DT"
       pars[,isDT] <- pars[,isDT]*pars[,"b"]
-      attr(pars,"ok") <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0) &
+      attr(pars,"ok") <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0) &
         (abs(pars[,"v"])<100) & ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0)
       # ( pars[,"v"] > 0 & pars[,"v"] < 10 ) &  ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0) & (abs(pars[,"b"])<10)
       pars
     },
     # Random function for racing accumulator
     rfun=function(lR=NULL,pars) {
-      ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0) &
+      ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0) &
         ( abs(pars[,"v"])< 10) & ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0) & (abs(pars[,"b"])<10)
       if (is.null(lR)) ok else rLBA_BE(pars,ok=ok)
     },
@@ -767,14 +767,14 @@ TC3lbaB <- function(){
       pnams <- c("A",dimnames(pars)[[2]][substr(dimnames(pars)[[2]],1,2)=="DT"],"B")
       pars[,pnams] <- t(apply(pars[,pnams],1,cumsum))
       dimnames(pars)[[2]][dimnames(pars)[[2]]=="B"] <- "b"
-      attr(pars,"ok") <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0) &
+      attr(pars,"ok") <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0) &
         (abs(pars[,"v"])<100) & ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0)
       # ( pars[,"v"] > 0 & pars[,"v"] < 10 ) &  ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0) & (abs(pars[,"b"])<10)
       pars
     },
     # Random function for racing accumulator
     rfun=function(lR=NULL,pars) {
-      ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0) &
+      ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0) &
         ( abs(pars[,"v"])< 10) & ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0) & (abs(pars[,"b"])<10)
       if (is.null(lR)) ok else rLBA_TC(pars,ok=ok)
     },
@@ -814,14 +814,14 @@ BE4lbaB <- function(){
       pnams <- c("A",dimnames(pars)[[2]][substr(dimnames(pars)[[2]],1,2)=="DT"],"B")
       pars[,pnams] <- t(apply(pars[,pnams],1,cumsum))
       dimnames(pars)[[2]][dimnames(pars)[[2]]=="B"] <- "b"
-      attr(pars,"ok") <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0) &
+      attr(pars,"ok") <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0) &
         (abs(pars[,"v"])<100) & ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0)
       # ( pars[,"v"] > 0 & pars[,"v"] < 10 ) &  ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0) & (abs(pars[,"b"])<10)
       pars
     },
     # Random function for racing accumulator
     rfun=function(lR=NULL,pars) {
-      ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0) &
+      ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0) &
         ( abs(pars[,"v"])< 10) & ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0) & (abs(pars[,"b"])<10)
       if (is.null(lR)) ok else rLBA_BE(pars,ok=ok)
     },
@@ -863,14 +863,14 @@ BE4lbaBP <- function(){
       pars <- cbind(pars,b=pars[,"B"] + pars[,"A"])
       isDT <- substr(dimnames(pars)[[2]],1,2)=="DT"
       pars[,isDT] <- pars[,isDT]*pars[,"b"]
-      attr(pars,"ok") <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0) &
+      attr(pars,"ok") <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0) &
         (abs(pars[,"v"])<100) & ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0)
       # ( pars[,"v"] > 0 & pars[,"v"] < 10 ) &  ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0) & (abs(pars[,"b"])<10)
       pars
     },
     # Random function for racing accumulator
     rfun=function(lR=NULL,pars) {
-      ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0) &
+      ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0) &
         ( abs(pars[,"v"])< 10) & ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0) & (abs(pars[,"b"])<10)
       if (is.null(lR)) ok else rLBA_BE(pars,ok=ok)
     },
@@ -917,14 +917,14 @@ TC4lbaB <- function(){
       pnams <- c("A",dimnames(pars)[[2]][substr(dimnames(pars)[[2]],1,2)=="DT"],"B")
       pars[,pnams] <- t(apply(pars[,pnams],1,cumsum))
       dimnames(pars)[[2]][dimnames(pars)[[2]]=="B"] <- "b"
-      attr(pars,"ok") <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0) &
+      attr(pars,"ok") <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0) &
         (abs(pars[,"v"])<100) & ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0)
       # ( pars[,"v"] > 0 & pars[,"v"] < 10 ) &  ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0) & (abs(pars[,"b"])<10)
       pars
     },
     # Random function for racing accumulator
     rfun=function(lR=NULL,pars) {
-      ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0) &
+      ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0) &
         ( abs(pars[,"v"])< 10) & ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0) & (abs(pars[,"b"])<10)
       if (is.null(lR)) ok else rLBA_TC(pars,ok=ok)
     },
@@ -966,14 +966,14 @@ MLBAnoC <- function(){
     # Trial dependent parameter transform
     Ttransform = function(pars,dadm) {
       pars <- cbind(pars,b=pars[,"B"] + pars[,"A"])
-      attr(pars,"ok") <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | (pars[,"A"] == 0)) &
+      attr(pars,"ok") <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | (pars[,"A"] == 0)) &
         (abs(pars[,"v"])<100) & ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0) & (pars[,"pContaminant"] > -4)
       pars
     },
     # # Random function for racing accumulator
     # Random function for racing accumulator
     rfun=function(lR=NULL,pars) {
-      ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0) &
+      ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0) &
         (abs(pars[,"v"])<100) & ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0) & (pars[,"pContaminant"] > -4)
       if (is.null(lR)) ok else rLBA(lR,pars,posdrift=TRUE)
     },
@@ -1014,14 +1014,14 @@ MLBA <- function(){
     # Trial dependent parameter transform
     Ttransform = function(pars,dadm) {
       pars <- cbind(pars,b=pars[,"B"] + pars[,"A"])
-      attr(pars,"ok") <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | (pars[,"A"] == 0)) &
+      attr(pars,"ok") <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | (pars[,"A"] == 0)) &
         (abs(pars[,"v"])<100) & ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0) & (pars[,"pContaminant"] > -4)
       pars
     },
     # # Random function for racing accumulator
     # Random function for racing accumulator
     rfun=function(lR=NULL,pars) {
-      ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0) &
+      ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0) &
         (abs(pars[,"v"])<100) & ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0) & (pars[,"pContaminant"] > -4)
       if (is.null(lR)) ok else rLBA(lR,pars,posdrift=TRUE)
     },
@@ -1060,14 +1060,14 @@ MULBA <- function(){
     # Trial dependent parameter transform
     Ttransform = function(pars,dadm) {
       pars <- cbind(pars,b=pars[,"B"] + pars[,"A"])
-      attr(pars,"ok") <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | (pars[,"A"] == 0)) &
+      attr(pars,"ok") <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | (pars[,"A"] == 0)) &
         (abs(pars[,"v"])<100) & ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0)
       pars
     },
     # # Random function for racing accumulator
     # Random function for racing accumulator
     rfun=function(lR=NULL,pars) {
-      ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0) &
+      ok <- (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0) &
         (abs(pars[,"v"])<100) & ((pars[,"sv"] > 1e-3) | pars[,"sv"] == 0)
       if (is.null(lR)) ok else rLBA(lR,pars,posdrift=FALSE)
     },

@@ -250,7 +250,7 @@ LBA <- function(){
       pars <- cbind(pars,b=pars[,"B"] + pars[,"A"])
       if (!is.null(attr(dadm,"adaptive"))) pars <- do_adaptive(pars,dadm)
       attr(pars,"ok") <- (pars[,"sv"] > 0) & (pars[,"B"] >= 0) &
-        (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-6) | pars[,"A"] == 0)
+        (pars[,"t0"] > .05) & ((pars[,"A"] > 1e-2) | pars[,"A"] == 0)
       pars
     },
     # Random function for racing accumulator
