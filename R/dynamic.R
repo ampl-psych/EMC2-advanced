@@ -326,6 +326,22 @@ dynamic_names <- function(nam=NULL) {
   )
 }
 
+set_dynamic_bounds <- function(di) {
+  switch(di$dyntype,
+         ei=list(index=2,lower=c(.001),upper=c(NA),exception=list(list=NA)),
+         ed=list(index=2,lower=c(.001),upper=c(NA),exception=list(list=NA)),
+         pi=list(index=2,lower=c(.001),upper=c(NA),exception=list(list=NA)),
+         pd=list(index=2,lower=c(.001),upper=c(NA),exception=list(list=NA)),
+         d1U=list(index=3,lower=c(.001),upper=c(NA),exception=list(list=NA)),
+         d2U=list(index=4:5,lower=c(.001,.001),upper=c(NA,NA),exception=list(list=NA,list=NA)),
+         d1P=list(index=3,lower=c(.001),upper=c(NA),exception=list(list=NA)),
+         d2P=list(index=4:5,lower=c(.001,.001),upper=c(NA,NA),exception=list(list=NA,list=NA)),
+         d1=list(index=3,lower=c(.001),upper=c(NA),exception=list(list=NA)),
+         d2=list(index=4:5,lower=c(.001,.001),upper=c(NA,NA),exception=list(list=NA,list=NA)),
+         d1b=list(index=3,lower=c(.001),upper=c(NA),exception=list(list=NA)),
+  )
+}
+
 check_dynamic <- function(dynamic) {
   if (any(duplicated(names(dynamic)))) stop("Duplicate names in dynamic")
   for (i in names(dynamic)) {
@@ -371,6 +387,7 @@ check_dynamic <- function(dynamic) {
     } else {
       dynamic[[i]]$lR1 <- TRUE
     }
+    if (is.null(dynamic[[i]]$bounds)) dynamic[[i]] <- set_dynamic_bounds(dynamic[[i]])
   }
   dynamic
 }
@@ -426,6 +443,7 @@ check_adaptive <- function(adaptive,formula=NULL) {
       adaptive[[i]]$lR1 <- FALSE
     }
     if (adaptive[[i]]$dyntype %in% names(dynamic_names("learn"))) adaptive[[i]]$lR1 <- NA
+    if (is.null(adaptive[[i]]$bounds)) adaptive[[i]] <- set_dynamic_bounds(adaptive[[i]])
   }
   attr(adaptive,"aptypes") <- unique(unlist(lapply(adaptive,function(x)x$aptypes),use.names = FALSE))
   adaptive
