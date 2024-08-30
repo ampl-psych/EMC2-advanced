@@ -101,7 +101,7 @@ ALBAnoC <- function(){
     # Transform to natural scale
     Ntransform=function(x,use=NULL) {
       if (is.null(use)) {
-        use <- !(names(x) %in% c("v","SD","SS","DD","DS"))
+        use <- !(colnames(x) %in% c("v","SD","SS","DD","DS"))
         x[,use] <- exp(x[,use])
       } else if (!all(use=="v")) {
         use <- use[!(use %in% c("v","SD","SS","DD","DS"))] # never transform advantage shape
@@ -155,7 +155,7 @@ ALBA <- function(){
     # Transform to natural scale
     Ntransform=function(x,use=NULL) {
       if (is.null(use)) {
-        use <- !(names(x) %in% c("v","SD","SS","DD","DS"))
+        use <- !(colnames(x) %in% c("v","SD","SS","DD","DS"))
         x[,use] <- exp(x[,use])
       } else if (!all(use=="v")) {
         use <- use[!(use %in% c("v","SD","SS","DD","DS"))] # never transform advantage shape

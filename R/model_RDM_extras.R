@@ -99,7 +99,7 @@ ARDM <- function(){
     Ntransform=function(x,use=NULL) {
       # transform parameters back to real line
       if (is.null(use)) {
-        use <- !(names(x) %in% c("SD","SS","DD","DS"))
+        use <- !(colnames(x) %in% c("SD","SS","DD","DS"))
         x[,use] <- exp(x[,use])
       } else {
         use <- use[!(use %in% c("SD","SS","DD","DS"))] # never transform advantage shape
@@ -150,7 +150,7 @@ ARDMnoC <- function(){
     Ntransform=function(x,use=NULL) {
       # transform parameters back to real line
       if (is.null(use)) {
-        use <- !(names(x) %in% c("SD","SS","DD","DS"))
+        use <- !(colnames(x) %in% c("SD","SS","DD","DS"))
         x[,use] <- exp(x[,use])
       } else {
         use <- use[!(use %in% c("SD","SS","DD","DS"))] # never transform advantage shape
