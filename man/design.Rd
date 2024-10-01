@@ -19,7 +19,9 @@ design(
   custom_p_vector = NULL,
   dynamic = NULL,
   adaptive = NULL,
-  omit_transform = NULL,
+  transform = NULL,
+  lower = NULL,
+  upper = NULL,
   advantage = NULL,
   ...
 )
@@ -119,12 +121,18 @@ parameters.
 make adaptive. Structure of list as for dynamic except dnames is anames and
 transform and equal_accumulators defaults are FALSE}
 
-\item{omit_transform}{Names of parameter types to NOT transform as specified in the model}
+\item{transform}{Character vector with parameter type names and one of three
+entries: "identity", "log", or "probit", e.g., estimate on qnorm(x) scale for
+latter. Default NULL uses defaults in model file.}
 
 \item{advantage}{vector with parameter type name with the name of the function
 that generates stimulus values}
 
 \item{...}{Additional, optional arguments}
+
+\item{:}{upper Numeric vector with parameter type name in the transform argument
+specifying "log" or "probit" giving its upper bound e.g., estimate
+qnorm((x-lower)/(upper-lower)), where lower is set to zero if not specified}
 }
 \value{
 A design list.

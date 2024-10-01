@@ -83,7 +83,14 @@
 #' @param adaptive List with names of parameter types (i.e., after mapping) to
 #' make adaptive. Structure of list as for dynamic except dnames is anames and
 #' transform and equal_accumulators defaults are FALSE
-#' @param omit_transform Names of parameter types to NOT transform as specified in the model
+#' @param transform Character vector with parameter type names and one of three
+#' entries: "identity", "log", or "probit", e.g., estimate on qnorm(x) scale for
+#' latter. Default NULL uses defaults in model file.
+#' @param: lower Numeric vector with parameter type name in the transform argument
+#' specifying "log" or "probit" giving its lower bound e.g., estimate log(x - lower)
+#' @param: upper Numeric vector with parameter type name in the transform argument
+#' specifying "log" or "probit" giving its upper bound e.g., estimate
+#' qnorm((x-lower)/(upper-lower)), where lower is set to zero if not specified
 #' @param advantage vector with parameter type name with the name of the function
 #' that generates stimulus values
 #' @param ... Additional, optional arguments
@@ -116,7 +123,7 @@
 design <- function(formula = NULL,factors = NULL,Rlevels = NULL,model,data=NULL,
                         contrasts=NULL,matchfun=NULL,constants=NULL,covariates=NULL,functions=NULL,
                         report_p_vector=TRUE, custom_p_vector = NULL,
-                        dynamic=NULL,adaptive=NULL,omit_transform=NULL,
+                        dynamic=NULL,adaptive=NULL,transform=NULL,lower=NULL,upper=NULL,
                         advantage=NULL, ...){
   optionals <- list(...)
 
@@ -266,13 +273,13 @@ design <- function(formula = NULL,factors = NULL,Rlevels = NULL,model,data=NULL,
     attr(design,"transform_names") <- names(model()$p_types)
     if (!is.null(advantage)) attr(design,"transform_names") <-
         attr(design,"transform_names")[!(attr(design,"transform_names") %in% c("SS","SD"))]
-    if (!is.null(omit_transform)) {
-      bad <- !(omit_transform  %in% attr(design,"transform_names"))
-      if (any(bad)) stop("omit_transform has names not in the model: ",
-                         paste(omit_transform[bad],collapse=","))
-      message("Omitting standard transformations for parameter type ",paste(omit_transform,collapse=","))
+    if (!is.null(transform)) {
+      bad <- !(names(omit_transform)  %in% attr(design,"transform_names"))
+      if (any(bad)) stop("transform has names not in the model: ",paste(names(transform[bad]),collapse=","))
+
+      message("Using non-standard transformations for parameter type ",paste(transform,collapse=","))
       attr(design,"transform_names") <-
-        attr(design,"transform_names")[!(attr(design,"transform_names") %in% omit_transform)]
+        attr(design,"transform_names")[!(attr(design,"transform_names") %in% transform)]
     }
   } else attr(design,"transform_names") <- unique(c(attr(dynamic,"transform_names"),
                                                     attr(adaptive,"transform_names")))

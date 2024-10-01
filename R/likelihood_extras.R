@@ -1,3 +1,22 @@
+#### GNG ----
+log_likelihood_ddmgng <- function(p_vector,dadm,min_ll=log(1e-10))
+  # DDM summed log likelihood, with protection against numerical issues
+{
+  pars <- get_pars_matrix(p_vector,dadm)
+  like <- numeric(dim(dadm)[1])
+  if (any(attr(pars,"ok"))) {
+    isna <- is.na(dadm$rt)
+    ok <- attr(pars,"ok") & !isna
+    like[ok] <- attr(dadm,"model")()$dfun(dadm$rt[ok],dadm$R[ok],pars[ok,,drop=FALSE])
+    ok <- attr(pars,"ok") & isna
+    like[ok] <-
+      attr(dadm,"model")()$pfun(dadm$rt[ok],dadm$Rnogo[ok],pars[ok,,drop=FALSE]) +
+      (1-attr(dadm,"model")()$pfun(dadm$TIMEOUT[ok],dadm$Rgo[ok],pars[ok,,drop=FALSE]))
+  }
+  like[attr(pars,"ok")][is.na(like[attr(pars,"ok")])] <- 0
+  sum(pmax(min_ll,log(like[attr(dadm,"expand")])))
+}
+
 #### Advantage ----
 log_likelihood_race_advantage <- function(p_vector,dadm,min_ll=log(1e-10))
   # Race model summed log likelihood

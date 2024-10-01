@@ -49,8 +49,6 @@ profile_plot(
 \item{true_plot_args}{A list. Optional additional arguments that can be passed to plot.default for the plotting of the true vertical line.}
 
 \item{...}{Optional additional arguments that can be passed to plot.default.}
-
-\item{c_min_ll}{minimum likelihood to use with C version of likelihood, default 1e-10}
 }
 \value{
 Vector with highest likelihood point, input and mismatch between true and highest point
