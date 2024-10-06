@@ -523,9 +523,9 @@ get_adaptive <- function(pname,p_vector,data,design,return_dadm=TRUE,return_p=TR
   if (is.null(attr(dadm,"adaptive"))) stop("design must be adaptive")
   if (!(pname %in% names(attr(dadm,"adaptive")))) stop(pname," is not adaptive")
   model <- attributes(dadm)$model
-  p <- model()$Ttransform(model()$Ntransform(map_p(
+  p <- add_bound(model()$Ttransform(do_transform(map_p(
     design$model()$transform(add_constants(p_vector,design$constants)),dadm
-  ),attr(design,"transform_names")),dadm)
+  ),attr(dadm,"transform")),dadm),attr(dadm,"bound"))
   covnames <- attr(dadm,"adaptive")[[pname]]$covnames
   isRL <- any(covnames=="winner")
   if (return_p) out <- p[,pname] else {
@@ -687,8 +687,9 @@ dynamic_rfun <- function(dynamic_cv,p_vector,dadm,design)
     # Make container for simulated data and fill in first line
     data <- tmp_dadm[tmp_dadm$lR==levels(tmp_dadm$lR)[1],]
     acci <- 1:nacc
-    tmp_pars[acci,] <- design$model()$Ttransform(design$model()$Ntransform(
-      tmp_pars[acci,,drop=FALSE],attr(design, "transform_names")),ndadadm)
+    tmp_pars[acci,] <- add_bound(design$model()$Ttransform(do_transform(
+      tmp_pars[acci,,drop=FALSE],attr(design, "transform")),ndadadm),attr(design,"bound"))
+    ok <- do_bound(tmp_pars[acci,,drop=FALSE],design$model()$bound)
     if (!is.null(design$adaptive)) {
       for (p in names(adaptive)) {
         tmp_pars[acci,p] <- switch(apars[[p]]$maptype, # map q to parameter
@@ -697,7 +698,9 @@ dynamic_rfun <- function(dynamic_cv,p_vector,dadm,design)
                                ucent = tmp_pars[acci,p] + tmp_p_vector[,apars[[p]]$aptypes[1]]*(aqlist[[p]][1]-.5))
       }
     }
-    data[1,c("R","rt")] <- design$model()$rfun(tmp_dadm$lR[acci],tmp_pars[acci,,drop=FALSE])
+    # FIX BOUND: bounds for adaptive?
+    data[1,c("R","rt")] <- design$model()$rfun(tmp_dadm$lR[acci],
+                                               tmp_pars[acci,,drop=FALSE],ok)
     for (cv in names(dynamic_cv)) {
       if (cv=="winner") {
         value <- t(tmp_dadm[acci,][,attr(tmp_dadm, "isRL")])
@@ -752,11 +755,13 @@ dynamic_rfun <- function(dynamic_cv,p_vector,dadm,design)
         }
       }
       # Having done all dynamic and adaptive, so updates simulate data
-      tmp_pars[j,] <- design$model()$Ttransform(design$model()$Ntransform(
-        tmp_pars[j,,drop=FALSE],attr(design, "transform_names")),ndadadm)
+      tmp_pars[j,] <- add_bound(design$model()$Ttransform(do_transform(
+        tmp_pars[j,,drop=FALSE],attr(dadm,"transform")),ndadadm),attr(dadm,"bound"))
+      # FIX BOUND: could put a check in here
       # if (!all(design$model()$rfun(NULL,tmp_pars[j,,drop=FALSE])))
       #   stop("Parameter generation for ",p," not ok: ",tmp_pars[j,p])
-      data[i,c("R","rt")] <- design$model()$rfun(tmp_dadm$lR[j],tmp_pars[j,,drop=FALSE])
+      ok <- do_bound(tmp_pars[j,,drop=FALSE],design$model()$bound)
+      data[i,c("R","rt")] <- design$model()$rfun(tmp_dadm$lR[j],tmp_pars[j,,drop=FALSE],ok)
       # Finally update cvs
       for (cv in names(dynamic_cv)) {
         if (cv=="winner") value <- t(tmp_dadm[j,][,attr(tmp_dadm, "isRL")]) else {
