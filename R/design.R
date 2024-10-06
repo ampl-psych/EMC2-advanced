@@ -1,3 +1,96 @@
+fill_transform <- function(transform, model,
+  supported=c("identity","exp","pnorm"),
+  has_lower=c("exp","pnorm"),has_upper=c("pnorm")) {
+
+  check_transform <- function(transform, lower, upper, model,
+    supported,has_lower,has_upper) {
+    if (!is.null(transform)) {
+      if (!all(transform %in% supported))
+        stop("Only ",supported," transforms supported")
+      if (!all(names(transform) %in% names(model()$p_types)))
+          stop("Transform parameter not in the model")
+      if (!is.null(lower)) {
+        if (!all(names(lower) %in% names(transform[transform %in% has_lower])))
+          stop("lower can only apply to tranforms of type ",paste(has_lower,collapse=","))
+      }
+      if (!is.null(upper)) {
+        if (!all(names(upper) %in% names(transform[transform %in% has_upper])))
+          stop("upper can only apply to tranforms of type ",paste(has_upper,collapse=","))
+      }
+    } else if (!is.null(lower) & !is.null(upper))
+      stop("transform must be provided if lower and/or upper are provided")
+  }
+
+  if (!is.null(transform))
+      check_transform(transform$transform,transform$lower,transform$upper,model,
+                      supported,has_lower,has_upper)
+  filled_transform <- model()$ptransform$transform
+  filled_transform[names(transform$transform)] <- transform$transform
+  filled_lower <- filled_upper <-
+    setNames(rep(NA,length(filled_transform)),names(filled_transform))
+  filled_lower[filled_transform %in% has_lower] <- 0
+  filled_upper[filled_transform %in% has_upper] <- 1
+  if (!is.null(transform$lower)) filled_lower[names(transform$lower)] <- transform$lower
+  if (!is.null(transform$upper)) filled_lower[names(transform$upper)] <- transform$upper
+  list(transform=filled_transform,lower=filled_lower,upper=filled_upper)
+}
+
+
+fill_bound <- function(bound, model) {
+
+  check_bound <- function(bound, model) {
+    if (names(bound)[1] != "minmax")
+      stop("first entry of bound must be named minmax")
+    if (!all(colnames(bound$minmax) %in% names(model()$p_types)))
+      stop("minmax column names must correspond to parameter types")
+    if (!is.null(bound$exception) &&
+        (!all(names(bound$exception) %in% names(model()$p_types))))
+      stop("exception names must correspond to parameter types")
+  }
+
+  filled_bound <- model()$bound
+  if (!is.null(bound)) {
+    check_bound(bound,model)
+    filled_bound$minmax[,colnames(bound$minmax)] <- bound$minmax
+    if (!is.null(bound$exception)) {
+      filled_bound$exception <- c(bound$exception,filled_bound$exception)
+      filled_bound$exception <-
+        filled_bound$exception[!duplicated(names(filled_bound$exception))]
+    }
+  }
+  filled_bound
+}
+
+
+do_transform <- function(pars,transform)
+  # pars is the parameter matrix, transform is a transform list
+{
+  isexp <- transform$transform[colnames(pars)] == "exp"
+  isprobit <- transform$transform[colnames(pars)] == "pnorm"
+  pars[,isexp] <- exp(pars[,isexp]- rep(transform$lower[isexp],each=nrow(pars)))
+  pars[,isprobit] <- pnorm((pars[,isprobit]-
+      rep(transform$lower[isprobit],each=nrow(pars)))/
+        (rep((transform$upper[isprobit]-transform$lower[isprobit]),each=nrow(pars))))
+  pars
+}
+
+
+# This form used in random number generation
+do_bound <- function(pars,bound) {
+  tpars <- t(pars[,colnames(bound$minmax),drop=FALSE])
+  ok <- tpars > bound$minmax[1,] & tpars < bound$minmax[2,]
+  if (!is.null(bound$exception)) ok[names(bound$exception),] <-
+    ok[names(bound$exception),] |
+    (tpars[names(bound$exception),] == bound$exception)
+  apply(ok,2,all)
+}
+
+# This form used in get_pars
+add_bound <- function(pars,bound) {
+  attr(pars,"ok") <- do_bound(pars,bound)
+  pars
+}
+
 
 #' Specify a design and model
 #'
@@ -83,7 +176,15 @@
 #' @param adaptive List with names of parameter types (i.e., after mapping) to
 #' make adaptive. Structure of list as for dynamic except dnames is anames and
 #' transform and equal_accumulators defaults are FALSE
-#' @param omit_transform Names of parameter types to NOT transform as specified in the model
+#' @param transform List, $transform = character vector named for parameters types
+#' in the model, either "identity", "exp", or "pnorm", defualt values defined in
+#' the model, and and optionally $lower, lower bound for exp and pnorm, and
+#' $upper upper bound for pnrom (default no bounds)
+#' @param bound List of $minmax = 2 row matrix, column names for parameter types
+#' in the model, row 1 = min, row 2 = max, outside these ranges likelihood set
+#' to a small minimum value, optionally $exception, numeric parameter type named
+#' vector, value that is ok even if outside the min-max range. Default values
+#' for bound defined in the model.
 #' @param advantage vector with parameter type name with the name of the function
 #' that generates stimulus values
 #' @param ... Additional, optional arguments
@@ -116,7 +217,7 @@
 design <- function(formula = NULL,factors = NULL,Rlevels = NULL,model,data=NULL,
                         contrasts=NULL,matchfun=NULL,constants=NULL,covariates=NULL,functions=NULL,
                         report_p_vector=TRUE, custom_p_vector = NULL,
-                        dynamic=NULL,adaptive=NULL,omit_transform=NULL,
+                        dynamic=NULL,adaptive=NULL,transform=NULL,bound=NULL,
                         advantage=NULL, ...){
   optionals <- list(...)
 
@@ -218,37 +319,9 @@ design <- function(formula = NULL,factors = NULL,Rlevels = NULL,model,data=NULL,
   if (!is.null(ordinal)) if (!all(ordinal %in% names(p_vector)))
     stop("ordinal argument has parameters names not in the model")
 
-  if (!is.null(dynamic)) {
-    if (!all(names(dynamic) %in% names(add_constants(p_vector,design$constants))))
-      stop("dynamic argument has parameter names not in the model")
-    pt <- lapply(attr(attr(design, "p_vector"), "map"),
-                 function(x) unlist(dimnames(x)[[2]]))
-    isd <- setNames(!logical(length(pt)),names(pt))
-    dp <- names(lapply(dynamic, function(x) names(x$dpnames)))
-    dp <- dp[unlist(lapply(dynamic,function(x){!x$transform}))]
-    isd <- unlist(lapply(pt, function(x) any(dp %in% x)))
-    # If name included do transformation
-    attr(dynamic,"transform_names") <- names(isd[!isd])
-    for (i in names(dynamic)) {
-      dynamic[[i]]$ptype <- names(pt)[unlist(lapply(pt,function(x){i %in% x}))]
-    }
-  }
-
-
-  if (!is.null(adaptive)) {
-    pt <- lapply(attr(attr(design, "p_vector"), "map"),
-                 function(x) unlist(dimnames(x)[[2]]))
-    istrans <- setNames(!logical(length(pt)),names(pt))
-    # Parameters not to transform
-    ap <- names(adaptive)[unlist(lapply(adaptive,function(x)!x$transform))]
-    # ap <- c(ap,unlist(lapply(adaptive, function(x)
-    #   if (!x$transform) x$apnames),use.names=FALSE))
-    ap <- c(ap,unlist(lapply(adaptive, function(x) {
-      if (!x$transform) x$aptypes}),use.names = FALSE))
-    istrans[ap] <- FALSE
-    # If name included do transformation
-    attr(adaptive,"transform_names") <- names(istrans[istrans])
-  }
+  if (!is.null(dynamic) &&
+      !all(names(dynamic) %in% names(add_constants(p_vector,design$constants))))
+    stop("dynamic argument has parameter names not in the model")
 
   if (report_p_vector) {
     cat("\n Sampled Parameters: \n")
@@ -262,20 +335,8 @@ design <- function(formula = NULL,factors = NULL,Rlevels = NULL,model,data=NULL,
   design$dynamic <- dynamic
   design$adaptive <- adaptive
   design$advantage <- advantage
-  if (is.null(dynamic) & is.null(adaptive)) {
-    attr(design,"transform_names") <- names(model()$p_types)
-    if (!is.null(advantage)) attr(design,"transform_names") <-
-        attr(design,"transform_names")[!(attr(design,"transform_names") %in% c("SS","SD"))]
-    if (!is.null(omit_transform)) {
-      bad <- !(omit_transform  %in% attr(design,"transform_names"))
-      if (any(bad)) stop("omit_transform has names not in the model: ",
-                         paste(omit_transform[bad],collapse=","))
-      message("Omitting standard transformations for parameter type ",paste(omit_transform,collapse=","))
-      attr(design,"transform_names") <-
-        attr(design,"transform_names")[!(attr(design,"transform_names") %in% omit_transform)]
-    }
-  } else attr(design,"transform_names") <- unique(c(attr(dynamic,"transform_names"),
-                                                    attr(adaptive,"transform_names")))
+  attr(design,"transform") <- fill_transform(transform,model)
+  attr(design,"bound") <- fill_bound(bound,model)
   return(design)
 }
 
@@ -695,7 +756,6 @@ design_model <- function(data,design,model=NULL,
   # These elements of model define the paramaterization being used
   #   ptypes defines the parameter types for which designs must be specified
   #   transform if a function acting on p_vector before mapping
-  #   Ntransform is a function acting on the output of map_p
 {
 
   check_rt <- function(b,d,upper=TRUE)
@@ -796,9 +856,8 @@ design_model <- function(data,design,model=NULL,
     da <- cbind.data.frame(da,newF)
   }
 
-  if (is.null(model()$p_types) | is.null(model()$transform) |
-      is.null(model()$Ntransform) | is.null(model()$Ttransform))
-    stop("p_types, transform and Ntransform must be supplied")
+  if (is.null(model()$p_types) | is.null(model()$transform) | is.null(model()$Ttransform))
+    stop("p_types, transform and Ttransform must be supplied")
   if (!all(unlist(lapply(design$Flist,class))=="formula"))
     stop("Flist must contain formulas")
   if (is.null(design$DM_fixed)) { # LM type
@@ -916,8 +975,8 @@ design_model <- function(data,design,model=NULL,
   attr(dadm,"dynamic") <- design$dynamic
   attr(dadm,"adaptive") <- design$adaptive
   attr(dadm,"advantage") <- design$advantage
-  attr(dadm,"transform_names") <- attr(design,"transform_names")
-
+  attr(dadm,"transform") <- attr(design,"transform")
+  attr(dadm,"bound") <- attr(design,"bound")
   dadm
 }
 
