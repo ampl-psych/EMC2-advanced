@@ -12,12 +12,12 @@ get_pars_matrix <- function(p_vector,dadm) {
   }
 
 
-  attr(dadm,"model")()$Ttransform(
-    attr(dadm,"model")()$Ntransform(
+  add_bound(attr(dadm,"model")()$Ttransform(
+    do_transform(
       map_p(
         attr(dadm,"model")()$transform(add_constants(p_vector,attr(dadm,"constants"))),
-        dadm),attr(dadm, "transform_names")),
-    dadm)
+        dadm),attr(dadm, "transform")),
+    dadm),attr(dadm,"bound"))
 }
 
 get_design <- function(samples)
@@ -296,7 +296,7 @@ map_mcmc <- function(mcmc,design,include_constants = TRUE, add_recalculated = FA
     pmat <- do.call(cbind,plist)
     cnams <- colnames(pmat)
     colnames(pmat) <- get_p_types(cnams)
-    pmat[,] <- model()$Ntransform(pmat,use=attr(design$dynamic,"transform_names"))[,1:length(cnams)]
+    pmat[,] <- do_transform(pmat,attr(design$dynamic,"transform"))[,1:length(cnams)]
 
     if(add_recalculated) extras <- add_recalculated_pars(pmat, model, cnams)
     colnames(pmat) <- cnams
