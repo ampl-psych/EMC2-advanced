@@ -213,7 +213,6 @@ make_data <- function(parameters,design = NULL,n_trials=NULL,data=NULL,expand=1,
     if (!is.function(model)) stop("model arguement must  be a function")
     if ( is.null(model()$p_types) ) stop("model()$p_types must be specified")
     if ( is.null(model()$transform) ) stop("model()$transform must be specified")
-    if ( is.null(model()$Ntransform) ) stop("model()$Ntransform must be specified")
     if ( is.null(model()$Ttransform) ) stop("model()$Ttransform must be specified")
   }
   data <- design_model(
@@ -222,9 +221,9 @@ make_data <- function(parameters,design = NULL,n_trials=NULL,data=NULL,expand=1,
     rt_check=FALSE)
   if (!is.null(attr(design,"ordinal")))
     p_vector[,attr(design,"ordinal")] <- exp(p_vector[,attr(design,"ordinal")])
-  pars <- model()$Ttransform(model()$Ntransform(map_p(
+  pars <- add_bound(model()$Ttransform(do_transform(map_p(
     model()$transform(add_constants(p_vector,design$constants)),data
-  ),attr(design,"transform_names")),data)
+  ),attr(design,"transform")),data),attr(design,"bound"))
 
   # if (!is.null(attr(data,"isRL"))) data <- data[,!(names(data) %in% attr(data,"isRL"))]
 
@@ -249,7 +248,8 @@ make_data <- function(parameters,design = NULL,n_trials=NULL,data=NULL,expand=1,
     for (i in levels(RACE)) {
       pick <- data$RACE==i
       lRi <- factor(data$lR[pick & ok])
-      Rrti <- model()$rfun(lRi,pars[pick & ok,])
+      Rrti <- model()$rfun(lRi,pars[pick & ok,],
+                           do_bound(pars[pick & ok,],model()$bound))
       Rrti$R <- as.numeric(Rrti$R)
       Rrt[RACE==i,] <- as.matrix(Rrti)
     }
@@ -264,7 +264,7 @@ make_data <- function(parameters,design = NULL,n_trials=NULL,data=NULL,expand=1,
       dots <- add_defaults(list(...), p = 0.25, SSD0 = 0.25, stairstep = 0.05, stairmin = 0, stairmax = Inf)
       Rrt <- design$Ffunctions$staircase(dadm=data, dots$p, pars=pars, dots$SSD0, dots$stairstep,
                                          dots$stairmin, dots$stairmax)
-    } else Rrt <- model()$rfun(lR,pars)
+    } else Rrt <- model()$rfun(lR,pars,do_bound(pars,model()$bound))
   }
 
   dropNames <- c("lR","lM","lSmagnitude",attr(data, "isRL"),"staircase","lI")
