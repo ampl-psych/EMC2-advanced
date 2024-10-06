@@ -19,7 +19,8 @@ design(
   custom_p_vector = NULL,
   dynamic = NULL,
   adaptive = NULL,
-  omit_transform = NULL,
+  transform = NULL,
+  bound = NULL,
   advantage = NULL,
   ...
 )
@@ -119,7 +120,16 @@ parameters.
 make adaptive. Structure of list as for dynamic except dnames is anames and
 transform and equal_accumulators defaults are FALSE}
 
-\item{omit_transform}{Names of parameter types to NOT transform as specified in the model}
+\item{transform}{List, $transform = character vector named for parameters types
+in the model, either "identity", "exp", or "pnorm", defualt values defined in
+the model, and and optionally $lower, lower bound for exp and pnorm, and
+$upper upper bound for pnrom (default no bounds)}
+
+\item{bound}{List of $minmax = 2 row matrix, column names for parameter types
+in the model, row 1 = min, row 2 = max, outside these ranges likelihood set
+to a small minimum value, optionally $exception, numeric parameter type named
+vector, value that is ok even if outside the min-max range. Default values
+for bound defined in the model.}
 
 \item{advantage}{vector with parameter type name with the name of the function
 that generates stimulus values}
