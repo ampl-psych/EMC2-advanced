@@ -42,13 +42,16 @@ staircase_fun <- function(dadm,p=.25,pars=NULL,
     if (any(pick)) { # fill in no-stop trials
       out_i$SSD[pick[is1]] <- Inf
       pars_i[pick,"SSD"] <- Inf
-      out_i[pick[is1],c("R","rt")] <- attributes(dadm_i)$model()$rfun(dadm_i$lR[pick],pars_i[pick,,drop=FALSE])
+      out_i[pick[is1],c("R","rt")] <-
+        attributes(dadm_i)$model()$rfun(dadm_i$lR[pick],pars_i[pick,,drop=FALSE],
+          do_bound(pars_i[pick,,drop=FALSE],attr(dadm,"bound")))
     }
     pick <- is.finite(dadm_i$SSD)
     if (any(pick)) { # fill in fixed SSD trials
       out_i$SSD[pick[is1]] <- dadm_i$SSD[pick][is1[pick]]
       pars_i[pick,"SSD"] <- dadm_i$SSD[pick]
-      out_i[pick[is1],c("R","rt")] <- attributes(dadm_i)$model()$rfun(dadm_i$lR[pick],pars_i[pick,,drop=FALSE])
+      out_i[pick[is1],c("R","rt")] <- attributes(dadm_i)$model()$rfun(dadm_i$lR[pick],
+        pars_i[pick,,drop=FALSE],do_bound(pars_i[pick,,drop=FALSE],attr(dadm,"bound")))
     }
     isna <- is.na(dadm_i$SSD)
     if (any(isna)) { # run staircase if any NAs to fill in
@@ -60,7 +63,8 @@ staircase_fun <- function(dadm,p=.25,pars=NULL,
         if (s==1)  dadm_i$SSD[current] <- out_i$SSD[current[is1]] <- SSD0 # initialize
         p_stairs <- pars_i[current,,drop=FALSE] # parameters for current staircase trial
         # simulate 1 trial, because is.na(SSD) in pars_i rfun returns dt, an nacc x 1 matrix
-        dt <- attributes(dadm_i)$model()$rfun(dadm_i$lR[current],p_stairs)
+        dt <- attributes(dadm_i)$model()$rfun(dadm_i$lR[current],p_stairs,
+                                              do_bound(p_stairs),attr(dadm,"bound"))
         inhibit <- p_stairs[,"lI"]==1 # inhibition triggered
         # add SSD to stop and inhibition triggered
         dt[c(TRUE,inhibit),] <- dt[c(TRUE,inhibit),] + dadm_i$SSD[current][1]
